@@ -14,7 +14,7 @@ CURR_DIR := $(dir $(MAKEFILE_PATH))
 CGO_ENABLED := 1
 
 CGO_LDFLAGS ?= "\
--L$(CURR_DIR)../build/_deps/sodium-build \
+-L$(CURR_DIR)../build/depends/sodium \
 -L$(CURR_DIR)../build/depends/relic/lib \
 -L$(CURR_DIR)../build/src \
 -ldashbls -lrelic_s -lgmp"
