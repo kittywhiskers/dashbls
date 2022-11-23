@@ -2,19 +2,19 @@
 # Distributed under the MIT software license, see the accompanying
 # file COPYING.MIT or http://www.opensource.org/licenses/mit-license.php.
 
-LIBMINIALLOC = libminialloc.la
+LIBSODIUM = libsodium.la
 
-MINIALLOC_CFLAGS = -DLIBRARY_STATIC
+SODIUM_CFLAGS = -DLIBRARY_STATIC
 
-MINIALLOC_INCLUDES = \
+SODIUM_INCLUDES = \
 	-I$(top_srcdir)/depends/sodium \
 	-I$(top_srcdir)/depends/sodium/libsodium/src/libsodium/include \
 	-I$(top_srcdir)/depends/sodium/libsodium/src/libsodium/include/sodium
 
-MINIALLOC_H = \
+SODIUM_H = \
 	depends/sodium/precomp.h
 
-libminialloc_la_SOURCES = \
+libsodium_la_SOURCES = \
 	depends/sodium/libsodium/src/libsodium/crypto_core/ed25519/ref10/ed25519_ref10.c \
 	depends/sodium/libsodium/src/libsodium/crypto_core/salsa/ref/core_salsa_ref.c \
 	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/generichash_blake2.c \
@@ -49,6 +49,6 @@ libminialloc_la_SOURCES = \
 	depends/sodium/libsodium/src/libsodium/sodium/runtime.c \
 	depends/sodium/libsodium/src/libsodium/sodium/utils.c
 
-libminialloc_la_CFLAGS = $(AM_CFLAGS) $(MINIALLOC_INCLUDES) $(MINIALLOC_CFLAGS)
+libsodium_la_CFLAGS = $(AM_CFLAGS) $(SODIUM_INCLUDES) $(SODIUM_CFLAGS)
 
-noinst_LTLIBRARIES += $(LIBMINIALLOC)
+noinst_LTLIBRARIES += $(LIBSODIUM)
