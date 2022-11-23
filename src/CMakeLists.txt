@@ -25,13 +25,13 @@ target_include_directories(dashbls
 
 target_compile_definitions(dashbls
   PRIVATE
-    BLSALLOC_MINIALLOC=1
+    BLSALLOC_SODIUM=1
 )
 
 target_link_libraries(dashbls
   PUBLIC
     relic_s
-    minialloc
+    sodium
 )
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../depends/relic/include/ DESTINATION include/dashbls)
