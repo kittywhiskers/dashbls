@@ -28,6 +28,8 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules
 )
 
+include(FetchContent)
+
 # Relic related options
 
 set(STBIN "off" CACHE STRING "Relic - Build static binaries")
