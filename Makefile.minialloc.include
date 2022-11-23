@@ -4,27 +4,51 @@
 
 LIBMINIALLOC = libminialloc.la
 
-MINIALLOC_CPPFLAGS = -DLIBRARY_STATIC
+MINIALLOC_CFLAGS = -DLIBRARY_STATIC
 
 MINIALLOC_INCLUDES = \
-	-I$(top_srcdir)/depends/minialloc/contrib/bitcoin \
-	-I$(top_srcdir)/depends/minialloc/include \
-	-I$(top_srcdir)/depends/minialloc/src
+	-I$(top_srcdir)/depends/sodium \
+	-I$(top_srcdir)/depends/sodium/libsodium/src/libsodium/include \
+	-I$(top_srcdir)/depends/sodium/libsodium/src/libsodium/include/sodium
 
 MINIALLOC_H = \
-	depends/minialloc/contrib/bitcoin/support/cleanse.h \
-	depends/minialloc/contrib/bitcoin/support/lockedpool.h \
-	depends/minialloc/include/minialloc.h \
-	depends/minialloc/include/minialloc/export.h \
-	depends/minialloc/src/loadstor.h
+	depends/sodium/precomp.h
 
 libminialloc_la_SOURCES = \
-	$(MINIALLOC_H) \
-	depends/minialloc/contrib/bitcoin/support/lockedpool.cpp \
-	depends/minialloc/contrib/bitcoin/support/cleanse.cpp \
-	depends/minialloc/src/minialloc.cpp
+	depends/sodium/libsodium/src/libsodium/crypto_core/ed25519/ref10/ed25519_ref10.c \
+	depends/sodium/libsodium/src/libsodium/crypto_core/salsa/ref/core_salsa_ref.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/generichash_blake2.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-compress-avx2.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-compress-ref.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-compress-sse41.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-compress-ssse3.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-ref.c \
+	depends/sodium/libsodium/src/libsodium/crypto_generichash/blake2b/ref/generichash_blake2b.c \
+	depends/sodium/libsodium/src/libsodium/crypto_onetimeauth/poly1305/donna/poly1305_donna.c \
+	depends/sodium/libsodium/src/libsodium/crypto_onetimeauth/poly1305/onetimeauth_poly1305.c \
+	depends/sodium/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-core.c \
+	depends/sodium/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-avx2.c \
+	depends/sodium/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-ref.c \
+	depends/sodium/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-ssse3.c \
+	depends/sodium/libsodium/src/libsodium/crypto_pwhash/argon2/blake2b-long.c \
+	depends/sodium/libsodium/src/libsodium/crypto_scalarmult/crypto_scalarmult.c \
+	depends/sodium/libsodium/src/libsodium/crypto_scalarmult/curve25519/ref10/x25519_ref10.c \
+	depends/sodium/libsodium/src/libsodium/crypto_scalarmult/curve25519/scalarmult_curve25519.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/chacha20/dolbeau/chacha20_dolbeau-avx2.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/chacha20/dolbeau/chacha20_dolbeau-ssse3.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/chacha20/ref/chacha20_ref.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/chacha20/stream_chacha20.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/salsa20/ref/salsa20_ref.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/salsa20/stream_salsa20.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/salsa20/xmm6int/salsa20_xmm6int-avx2.c \
+	depends/sodium/libsodium/src/libsodium/crypto_stream/salsa20/xmm6int/salsa20_xmm6int-sse2.c \
+	depends/sodium/libsodium/src/libsodium/crypto_verify/sodium/verify.c \
+	depends/sodium/libsodium/src/libsodium/randombytes/randombytes.c \
+	depends/sodium/libsodium/src/libsodium/randombytes/sysrandom/randombytes_sysrandom.c \
+	depends/sodium/libsodium/src/libsodium/sodium/core.c \
+	depends/sodium/libsodium/src/libsodium/sodium/runtime.c \
+	depends/sodium/libsodium/src/libsodium/sodium/utils.c
 
-libminialloc_la_CPPFLAGS = $(AM_CPPFLAGS) $(MINIALLOC_INCLUDES) $(MINIALLOC_CPPFLAGS)
-libminialloc_la_CXXFLAGS = $(AM_CXXFLAGS)
+libminialloc_la_CFLAGS = $(AM_CFLAGS) $(MINIALLOC_INCLUDES) $(MINIALLOC_CFLAGS)
 
 noinst_LTLIBRARIES += $(LIBMINIALLOC)
