@@ -13,7 +13,6 @@
 #include <support/cleanse.h>
 
 #define POINTER_OFFSET 8              /* uint64_t */
-#define GARBAGE_VALUE  0xd0           /* libsodium garbage value */
 
 extern "C" {
 __attribute__((malloc)) void*
@@ -38,8 +37,7 @@ msecure_malloc(const size_t size)
     store_le(len, transform_ptr);
 
     user_ptr = transform_ptr + POINTER_OFFSET;
-
-    std::memset(user_ptr, (int)GARBAGE_VALUE, size);
+    memory_cleanse(user_ptr, size);
 
     return user_ptr;
 }
