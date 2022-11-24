@@ -24,18 +24,18 @@ msecure_malloc(const size_t size)
     uint8_t*    transform_ptr   = nullptr; /* intermediate representation used to manipulate
                                               base pointer to store underlying datatype size */
 
-    const uint64_t len = size;
-    if (size + sizeof(len) < size) {
+    const uint64_t len = size + sizeof(len);
+    if (len < size) {
         return nullptr;
     }
 
-    base_ptr = LockedPoolManager::Instance().alloc(size + sizeof(len));
+    base_ptr = LockedPoolManager::Instance().alloc(len);
     if (base_ptr == nullptr) {
         return nullptr;
     }
 
     transform_ptr = static_cast<uint8_t*>(base_ptr);
-    store_le(len, transform_ptr);
+    store_le64(size, transform_ptr);
 
     user_ptr = transform_ptr + POINTER_OFFSET;
 
@@ -56,7 +56,7 @@ msecure_free(void *ptr)
 
     base_ptr = static_cast<uint8_t*>(ptr) - POINTER_OFFSET;
 
-    const uint64_t len = load_le<uint64_t>(base_ptr, 0);
+    const uint64_t len = load_le64(base_ptr, 0);
     memory_cleanse(base_ptr, len + sizeof(len));
 
     LockedPoolManager::Instance().free(base_ptr);
