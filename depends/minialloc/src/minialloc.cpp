@@ -34,7 +34,7 @@ msecure_malloc(const size_t size)
     }
 
     transform_ptr = static_cast<uint8_t*>(base_ptr);
-    store_le(len, transform_ptr);
+    store_le64(len, transform_ptr);
 
     user_ptr = transform_ptr + POINTER_OFFSET;
     memory_cleanse(user_ptr, size);
@@ -54,7 +54,7 @@ msecure_free(void *ptr)
 
     base_ptr = static_cast<uint8_t*>(ptr) - POINTER_OFFSET;
 
-    const uint64_t len = load_le<uint64_t>(base_ptr, 0);
+    const uint64_t len = load_le64(base_ptr, 0);
     memory_cleanse(base_ptr, len + sizeof(len));
 
     LockedPoolManager::Instance().free(base_ptr);

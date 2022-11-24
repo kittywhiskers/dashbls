@@ -23,7 +23,20 @@ template<size_t B, typename T> inline constexpr uint8_t get_byte(T input)
    return static_cast<uint8_t>((input >> shift) & 0xFF);
 }
 
-inline constexpr void store_le(uint64_t in, uint8_t out[8])
+inline constexpr uint64_t make_uint64(uint8_t i0, uint8_t i1, uint8_t i2, uint8_t i3,
+                                      uint8_t i4, uint8_t i5, uint8_t i6, uint8_t i7)
+{
+   return  ((static_cast<uint64_t>(i0) << 56) |
+            (static_cast<uint64_t>(i1) << 48) |
+            (static_cast<uint64_t>(i2) << 40) |
+            (static_cast<uint64_t>(i3) << 32) |
+            (static_cast<uint64_t>(i4) << 24) |
+            (static_cast<uint64_t>(i5) << 16) |
+            (static_cast<uint64_t>(i6) <<  8) |
+            (static_cast<uint64_t>(i7)));
+}
+
+inline constexpr void store_le64(uint64_t in, uint8_t out[8])
 {
    out[0] = get_byte<7>(in);
    out[1] = get_byte<6>(in);
@@ -35,14 +48,11 @@ inline constexpr void store_le(uint64_t in, uint8_t out[8])
    out[7] = get_byte<0>(in);
 }
 
-template<typename T>
-inline constexpr T load_le(const uint8_t in[], size_t off)
+inline uint64_t load_le64(const uint8_t in[], size_t off)
 {
-    in += off * sizeof(T);
-    T out = 0;
-    for(size_t i = 0; i != sizeof(T); ++i)
-        out = (out << 8) | in[sizeof(T)-1-i];
-    return out;
+   in += off * sizeof(uint64_t);
+   return make_uint64(in[7], in[6], in[5], in[4],
+                      in[3], in[2], in[1], in[0]);
 }
 
 #endif // MINIALLOC_LOADSTOR_H
