@@ -101,7 +101,6 @@ set(PP_EXT "LAZYR" CACHE STRING "")
 set(PP_METHD "LAZYR;OATEP" CACHE STRING "")
 
 add_subdirectory(depends/relic)
-add_subdirectory(depends/minialloc)
 
 add_subdirectory(src)
 

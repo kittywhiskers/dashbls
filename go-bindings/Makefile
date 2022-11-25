@@ -17,7 +17,7 @@ CGO_LDFLAGS ?= "\
 -L$(CURR_DIR)../build/depends/minialloc \
 -L$(CURR_DIR)../build/depends/relic/lib \
 -L$(CURR_DIR)../build/src \
--ldashbls -lrelic_s -lgmp -lminialloc"
+-ldashbls -lrelic_s -lgmp"
 
 CGO_CXXFLAGS ?= "\
 -I$(CURR_DIR)../build/depends/relic/include \
