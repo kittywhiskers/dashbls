@@ -1,0 +1,9 @@
+# Copyright (c) 2023 The Dash Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING.MIT or http://www.opensource.org/licenses/mit-license.php
+
+EXPECTED_INCLUDES = \
+	-I$(top_srcdir)/depends/expected/include
+
+EXPECTED_H = \
+    depends/expected/include/tl/expected.hpp

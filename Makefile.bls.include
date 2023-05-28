@@ -40,6 +40,7 @@ libdashbls_la_SOURCES = \
 
 libdashbls_la_SOURCES += \
 	$(DASHBLS_H) \
+	$(EXPECTED_H) \
 	$(MIMALLOC_H) \
 	$(RELIC_H)
 
@@ -48,10 +49,11 @@ libdashbls_la_LIBADD = \
 	$(LIBRELIC) \
 	$(GMP_LIBS)
 
-libdashbls_la_CPPFLAGS = $(AM_CPPFLAGS) $(RELIC_INCLUDES) $(MIMALLOC_INCLUDES) $(DASHBLS_INCLUDES) $(DASHBLS_CPPFLAGS)
+libdashbls_la_CPPFLAGS = $(AM_CPPFLAGS) $(RELIC_INCLUDES) $(EXPECTED_INCLUDES) $(MIMALLOC_INCLUDES) $(DASHBLS_INCLUDES) $(DASHBLS_CPPFLAGS)
 libdashbls_la_CXXFLAGS = $(AM_CXXFLAGS)
 libdashbls_la_LDFLAGS  = $(AM_LDFLAGS)
 
+include Makefile.expected.include
 include Makefile.mimalloc.include
 include Makefile.relic.include
 
