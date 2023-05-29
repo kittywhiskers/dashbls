@@ -17,7 +17,7 @@
 
 namespace bls {
 
-ExtendedPrivateKey ExtendedPrivateKey::FromSeed(const Bytes& bytes) {
+std::optional<ExtendedPrivateKey> ExtendedPrivateKey::FromSeed(const Bytes& bytes, std::vector<std::string>& errors) {
     // "BLS HD seed" in ascii
     const uint8_t prefix[] = {66, 76, 83, 32, 72, 68, 32, 115, 101, 101, 100};
 
@@ -47,9 +47,15 @@ ExtendedPrivateKey ExtendedPrivateKey::FromSeed(const Bytes& bytes) {
     bn_mod_basic(*skBn, *skBn, order);
     bn_write_bin(ILeft, PrivateKey::PRIVATE_KEY_SIZE, *skBn);
 
+    auto sk = PrivateKey::FromBytes(Bytes(ILeft, PrivateKey::PRIVATE_KEY_SIZE), errors);
+    if (!sk.has_value()) {
+        assert(!errors.empty());
+        return error(errors, "ExtendedPrivateKey::FromSeed(): PrivateKey::FromBytes failed");
+    }
+
     ExtendedPrivateKey esk(ExtendedPublicKey::REVISION, 0, 0, 0,
                            ChainCode::FromBytes(Bytes(IRight, ChainCode::SIZE)),
-                           PrivateKey::FromBytes(Bytes(ILeft, PrivateKey::PRIVATE_KEY_SIZE)));
+                           sk.value());
 
     Util::SecFree(skBn);
     Util::SecFree(ILeft);
@@ -57,7 +63,7 @@ ExtendedPrivateKey ExtendedPrivateKey::FromSeed(const Bytes& bytes) {
     return esk;
 }
 
-ExtendedPrivateKey ExtendedPrivateKey::FromBytes(const Bytes& bytes) {
+std::optional<ExtendedPrivateKey> ExtendedPrivateKey::FromBytes(const Bytes& bytes, std::vector<std::string>& errors) {
     uint32_t version = Util::FourBytesToInt(bytes.begin());
     uint32_t depth = bytes[4];
     uint32_t parentFingerprint = Util::FourBytesToInt(bytes.begin() + 5);
@@ -65,15 +71,21 @@ ExtendedPrivateKey ExtendedPrivateKey::FromBytes(const Bytes& bytes) {
     const uint8_t* ccPointer = bytes.begin() + 13;
     const uint8_t* skPointer = ccPointer + ChainCode::SIZE;
 
+    auto sk = PrivateKey::FromBytes(Bytes(skPointer, PrivateKey::PRIVATE_KEY_SIZE), errors);
+    if (!sk.has_value()) {
+        assert(!errors.empty());
+        return error(errors, "ExtendedPrivateKey::FromBytes(): PrivateKey::FromBytes failed");
+    }
+
     ExtendedPrivateKey esk(version, depth, parentFingerprint, childNumber,
                           ChainCode::FromBytes(Bytes(ccPointer, ChainCode::SIZE)),
-                          PrivateKey::FromBytes(Bytes(skPointer, PrivateKey::PRIVATE_KEY_SIZE)));
+                          sk.value());
     return esk;
 }
 
-ExtendedPrivateKey ExtendedPrivateKey::PrivateChild(uint32_t i, const bool fLegacy) const {
+std::optional<ExtendedPrivateKey> ExtendedPrivateKey::PrivateChild(uint32_t i, std::vector<std::string>& errors, const bool fLegacy) const {
     if (depth >= 255) {
-        throw std::logic_error("Cannot go further than 255 levels");
+        return error(errors, "ExtendedPrivateKey::PrivateChild(): Cannot go further than 255 levels");
     }
     // Hardened keys have i >= 2^31. Non-hardened have i < 2^31
     uint32_t cmp = (1 << 31);
@@ -110,13 +122,17 @@ ExtendedPrivateKey ExtendedPrivateKey::PrivateChild(uint32_t i, const bool fLega
     md_hmac(IRight, hmacInput, inputLen,
                     hmacKey, ChainCode::SIZE);
 
-    PrivateKey newSk = PrivateKey::FromBytes(Bytes(ILeft, PrivateKey::PRIVATE_KEY_SIZE), true);
-    newSk = PrivateKey::Aggregate({sk, newSk});
+    auto newSk = PrivateKey::FromBytes(Bytes(ILeft, PrivateKey::PRIVATE_KEY_SIZE), errors, true);
+    if (!newSk.has_value()) {
+        assert(!errors.empty());
+        return error(errors, "ExtendedPrivateKey::PrivateChild(): PrivateKey::FromBytes() failed");
+    }
 
+    auto newSkAg = PrivateKey::Aggregate({sk, newSk.value()});
     ExtendedPrivateKey esk(version, depth + 1,
                            sk.GetG1Element().GetFingerprint(), i,
                            ChainCode::FromBytes(Bytes(IRight, ChainCode::SIZE)),
-                           newSk);
+                           newSkAg);
 
     Util::SecFree(ILeft);
     Util::SecFree(hmacInput);
@@ -140,8 +156,13 @@ uint32_t ExtendedPrivateKey::GetChildNumber() const {
     return childNumber;
 }
 
-ExtendedPublicKey ExtendedPrivateKey::PublicChild(uint32_t i) const {
-    return PrivateChild(i).GetExtendedPublicKey();
+std::optional<ExtendedPublicKey> ExtendedPrivateKey::PublicChild(uint32_t i, std::vector<std::string>& errors) const {
+    auto sc = PrivateChild(i, errors);
+    if (!sc.has_value()) {
+        assert(!errors.empty());
+        return error(errors, "ExtendedPrivateKey::PublicChild(): ExtendedPrivateKey::PrivateChild failed");
+    }
+    return sc->GetExtendedPublicKey();
 }
 
 PrivateKey ExtendedPrivateKey::GetPrivateKey() const {

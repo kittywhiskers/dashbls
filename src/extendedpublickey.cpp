@@ -30,7 +30,7 @@ ExtendedPublicKey ExtendedPublicKey::FromBytes(const Bytes& bytes, const bool fL
     return epk;
 }
 
-ExtendedPublicKey ExtendedPublicKey::PublicChild(uint32_t i, const bool fLegacy) const {
+std::optional<ExtendedPublicKey> ExtendedPublicKey::PublicChild(uint32_t i, std::vector<std::string>& errors, const bool fLegacy) const {
     // Hardened children have i >= 2^31. Non-hardened have i < 2^31
     uint32_t cmp = (1 << 31);
     if (i >= cmp) {
@@ -68,8 +68,13 @@ ExtendedPublicKey ExtendedPublicKey::PublicChild(uint32_t i, const bool fLegacy)
     md_hmac(IRight, hmacInput, inputLen,
                     hmacKey, ChainCode::SIZE);
 
-    PrivateKey leftSk = PrivateKey::FromBytes(Bytes(ILeft, PrivateKey::PRIVATE_KEY_SIZE), true);
-    G1Element newPk = pk + leftSk.GetG1Element();
+    auto leftSk = PrivateKey::FromBytes(Bytes(ILeft, PrivateKey::PRIVATE_KEY_SIZE), errors, true);
+    if (!leftSk.has_value()) {
+        assert(!errors.empty());
+        return error(errors, "ExtendedPublicKey::PublicChild(): PrivateKey::FromBytes failed");
+    }
+
+    G1Element newPk = pk + leftSk->GetG1Element();
 
     ExtendedPublicKey epk(version, depth + 1,
                           GetPublicKey().GetFingerprint(), i,

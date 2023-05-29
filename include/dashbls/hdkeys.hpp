@@ -35,12 +35,12 @@ class HDKeys {
  public:
     static const uint8_t HASH_LEN = 32;
 
-    static PrivateKey KeyGen(const std::vector<uint8_t>& seed)
+    static std::optional<PrivateKey> KeyGen(const std::vector<uint8_t>& seed, strvec_t &errors)
     {
-        return KeyGen(Bytes(seed));
+        return KeyGen(Bytes(seed), errors);
     }
-    
-    static PrivateKey KeyGen(const Bytes& seed)
+
+    static std::optional<PrivateKey> KeyGen(const Bytes& seed, strvec_t &errors)
     {
         // KeyGen
         // 1. PRK = HKDF-Extract("BLS-SIG-KEYGEN-SALT-", IKM || I2OSP(0, 1))
@@ -53,7 +53,7 @@ class HDKeys {
 
         // Required by the ietf spec to be at least 32 bytes
         if (seed.size() < 32) {
-            throw std::invalid_argument("Seed size must be at least 32 bytes");
+            return error(errors, "HDKeys::KeyGen(): Seed size must be at least 32 bytes");
         }
 
         // "BLS-SIG-KEYGEN-SALT-" in ascii
@@ -97,7 +97,11 @@ class HDKeys {
 
         uint8_t *skBytes = Util::SecAlloc<uint8_t>(32);
         bn_write_bin(skBytes, 32, *skBn);
-        PrivateKey k = PrivateKey::FromBytes(Bytes(skBytes, 32));
+        auto k = PrivateKey::FromBytes(Bytes(skBytes, 32), errors);
+        if (!k.has_value()) {
+            assert(!errors.empty());
+            return error(errors, "HDKeys::KeyGen(): Private::FromBytes failed");
+        }
 
         Util::SecFree(prk);
         Util::SecFree(ikmHkdf);
@@ -150,24 +154,35 @@ class HDKeys {
         Util::SecFree(lamportPk);
     }
 
-    static PrivateKey DeriveChildSk(const PrivateKey& parentSk, uint32_t index) {
+    static std::optional<PrivateKey> DeriveChildSk(const PrivateKey& parentSk, uint32_t index, strvec_t &errors) {
         uint8_t* lamportPk = Util::SecAlloc<uint8_t>(HASH_LEN);
         HDKeys::ParentSkToLamportPK(lamportPk, parentSk, index);
         std::vector<uint8_t> lamportPkVector(lamportPk, lamportPk + HASH_LEN);
-        PrivateKey child = HDKeys::KeyGen(lamportPkVector);
+
+        auto child = HDKeys::KeyGen(lamportPkVector, errors);
+        if (!child.has_value()) {
+            assert(!errors.empty());
+            return error(errors, "HDKeys::DeriveChildSk(): HDKeys::KeyGen() failed");
+        }
+
         Util::SecFree(lamportPk);
         return child;
     }
 
-    static PrivateKey DeriveChildSkUnhardened(const PrivateKey& parentSk, uint32_t index) {
+    static std::optional<PrivateKey> DeriveChildSkUnhardened(const PrivateKey& parentSk, uint32_t index, strvec_t &errors) {
         uint8_t* buf = Util::SecAlloc<uint8_t>(G1Element::SIZE + 4);
         uint8_t* digest = Util::SecAlloc<uint8_t>(HASH_LEN);
         memcpy(buf, parentSk.GetG1Element().Serialize().data(), G1Element::SIZE);
         Util::IntToFourBytes(buf + G1Element::SIZE, index);
         Util::Hash256(digest, buf, G1Element::SIZE + 4);
 
-        PrivateKey ret = PrivateKey::Aggregate({parentSk, PrivateKey::FromBytes(Bytes(digest, HASH_LEN), true)});
+        auto pk = PrivateKey::FromBytes(Bytes(digest, HASH_LEN), errors, true);
+        if (!pk.has_value()) {
+            assert(!errors.empty());
+            return error(errors, "HDKeys::DeriveChildSkUnhardened(): HDKeys::KeyGen() failed");
+        }
 
+        PrivateKey ret = PrivateKey::Aggregate({parentSk, pk.value()});
         Util::SecFree(buf);
         Util::SecFree(digest);
         return ret;

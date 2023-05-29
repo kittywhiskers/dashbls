@@ -42,8 +42,8 @@ public:
     CoreMPL(const std::string& strId) : strCiphersuiteId(strId) {}
     // Generates a private key from a seed, similar to HD key generation
     // (hashes the seed), and reduces it mod the group order
-    virtual PrivateKey KeyGen(const vector<uint8_t>& seed);
-    virtual PrivateKey KeyGen(const Bytes& seed);
+    virtual std::optional<PrivateKey> KeyGen(const vector<uint8_t>& seed, std::vector<std::string>& errors);
+    virtual std::optional<PrivateKey> KeyGen(const Bytes& seed, std::vector<std::string>& errors);
 
     // Generates a public key from a secret key
     virtual vector<uint8_t> SkToPk(const PrivateKey &seckey);
@@ -97,8 +97,8 @@ public:
                                   const vector<Bytes>& messages,
                                   const G2Element& signature);
 
-    PrivateKey DeriveChildSk(const PrivateKey& sk, uint32_t index);
-    PrivateKey DeriveChildSkUnhardened(const PrivateKey& sk, uint32_t index);
+    std::optional<PrivateKey> DeriveChildSk(const PrivateKey& sk, uint32_t index, std::vector<std::string>& errors);
+    std::optional<PrivateKey> DeriveChildSkUnhardened(const PrivateKey& sk, uint32_t index, std::vector<std::string>& errors);
     G1Element DeriveChildPkUnhardened(const G1Element& sk, uint32_t index);
 
 protected:

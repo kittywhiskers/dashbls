@@ -49,10 +49,10 @@ PrivateKey PrivateKey::FromSeedBIP32(const Bytes& seed) {
 }
 
 // Construct a private key from a bytearray.
-PrivateKey PrivateKey::FromBytes(const Bytes& bytes, bool modOrder)
+std::optional<PrivateKey> PrivateKey::FromBytes(const Bytes& bytes, strvec_t &errors, bool modOrder)
 {
     if (bytes.size() != PRIVATE_KEY_SIZE) {
-        throw std::invalid_argument("PrivateKey::FromBytes: Invalid size");
+        return error(errors, "PrivateKey::FromBytes(): Invalid size");
     }
 
     PrivateKey k;
@@ -64,17 +64,17 @@ PrivateKey PrivateKey::FromBytes(const Bytes& bytes, bool modOrder)
         bn_mod_basic(k.keydata, k.keydata, ord);
     } else {
         if (bn_cmp(k.keydata, ord) > 0) {
-            throw std::invalid_argument(
-                "PrivateKey byte data must be less than the group order");
+            return error(errors, 
+                "PrivateKey::FromBytes(): PrivateKey byte data must be less than the group order");
         }
     }
     return k;
 }
 
 // Construct a private key from a bytearray.
-PrivateKey PrivateKey::FromByteVector(const std::vector<uint8_t> bytes, bool modOrder)
+std::optional<PrivateKey> PrivateKey::FromByteVector(const std::vector<uint8_t> bytes, strvec_t &errors, bool modOrder)
 {
-    return PrivateKey::FromBytes(Bytes(bytes), modOrder);
+    return PrivateKey::FromBytes(Bytes(bytes), errors, modOrder);
 }
 
 // Construct a private key from a bytearray.

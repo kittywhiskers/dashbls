@@ -23,6 +23,8 @@
 
 #include "elements.hpp"
 
+#include <optional>
+
 namespace bls {
 class PrivateKey {
  public:
@@ -38,10 +40,10 @@ class PrivateKey {
     static PrivateKey RandomPrivateKey();
 
     // Construct a private key from a bytearray.
-    static PrivateKey FromBytes(const Bytes& bytes, bool modOrder = false);
+    static std::optional<PrivateKey> FromBytes(const Bytes& bytes, strvec_t &errors, bool modOrder = false);
 
     // Construct a private key from a bytearray.
-    static PrivateKey FromByteVector(const std::vector<uint8_t> bytes, bool modOrder = false);
+    static std::optional<PrivateKey> FromByteVector(const std::vector<uint8_t> bytes, strvec_t &errors, bool modOrder = false);
 
     // Aggregate many private keys into one (sum of keys mod order)
     static PrivateKey Aggregate(std::vector<PrivateKey> const &privateKeys);

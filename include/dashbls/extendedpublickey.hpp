@@ -30,6 +30,8 @@
 #include "relic.h"
 #include "relic_test.h"
 
+#include <optional>
+
 namespace bls {
 
 /*
@@ -54,7 +56,7 @@ class ExtendedPublicKey {
     static ExtendedPublicKey FromBytes(const Bytes& bytes, bool fLegacy = true);
 
     // Derive a child extended public key, cannot be hardened
-    ExtendedPublicKey PublicChild(uint32_t i, bool fLegacy = true) const;
+    std::optional<ExtendedPublicKey> PublicChild(uint32_t i, std::vector<std::string>& errors, bool fLegacy = true) const;
 
     uint32_t GetVersion() const;
     uint8_t GetDepth() const;

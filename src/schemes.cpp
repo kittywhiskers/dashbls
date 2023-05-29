@@ -80,12 +80,12 @@ const std::string AugSchemeMPL::CIPHERSUITE_ID = "BLS_SIG_BLS12381G2_XMD:SHA-256
 const std::string PopSchemeMPL::CIPHERSUITE_ID = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 const std::string PopSchemeMPL::POP_CIPHERSUITE_ID = "BLS_POP_BLS12381G2_XMD:SHA-256_SSWU_RO_POP_";
 
-PrivateKey CoreMPL::KeyGen(const vector<uint8_t>& seed) {
-    return HDKeys::KeyGen(seed);
+std::optional<PrivateKey> CoreMPL::KeyGen(const vector<uint8_t>& seed, std::vector<std::string>& errors) {
+    return HDKeys::KeyGen(seed, errors);
 }
 
-PrivateKey CoreMPL::KeyGen(const Bytes& seed) {
-    return HDKeys::KeyGen(seed);
+std::optional<PrivateKey> CoreMPL::KeyGen(const Bytes& seed, std::vector<std::string>& errors) {
+    return HDKeys::KeyGen(seed, errors);
 }
 
 vector<uint8_t> CoreMPL::SkToPk(const PrivateKey &seckey)
@@ -363,12 +363,12 @@ bool CoreMPL::NativeVerify(g1_t *pubkeys, g2_t *mappedHashes, size_t length)
     return true;
 }
 
-PrivateKey CoreMPL::DeriveChildSk(const PrivateKey& sk, uint32_t index) {
-    return HDKeys::DeriveChildSk(sk, index);
+std::optional<PrivateKey> CoreMPL::DeriveChildSk(const PrivateKey& sk, uint32_t index, std::vector<std::string>& errors) {
+    return HDKeys::DeriveChildSk(sk, index, errors);
 }
 
-PrivateKey CoreMPL::DeriveChildSkUnhardened(const PrivateKey& sk, uint32_t index) {
-    return HDKeys::DeriveChildSkUnhardened(sk, index);
+std::optional<PrivateKey> CoreMPL::DeriveChildSkUnhardened(const PrivateKey& sk, uint32_t index, std::vector<std::string>& errors) {
+    return HDKeys::DeriveChildSkUnhardened(sk, index, errors);
 }
 
 G1Element CoreMPL::DeriveChildPkUnhardened(const G1Element& pk, uint32_t index) {

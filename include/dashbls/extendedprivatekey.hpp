@@ -49,16 +49,16 @@ class ExtendedPrivateKey {
     static const uint32_t SIZE = 77;
 
     // Generates a master private key and chain code from a seed
-    static ExtendedPrivateKey FromSeed(const Bytes& bytes);
+    static std::optional<ExtendedPrivateKey> FromSeed(const Bytes& bytes, std::vector<std::string>& errors);
 
     // Parse private key and chain code from bytes
-    static ExtendedPrivateKey FromBytes(const Bytes& bytes);
+    static std::optional<ExtendedPrivateKey> FromBytes(const Bytes& bytes, std::vector<std::string>& errors);
 
     // Derive a child extEnded private key, hardened if i >= 2^31
-    ExtendedPrivateKey PrivateChild(uint32_t i, bool fLegacy = true) const;
+    std::optional<ExtendedPrivateKey> PrivateChild(uint32_t i, std::vector<std::string>& errors, bool fLegacy = true) const;
 
     // Derive a child extended public key, hardened if i >= 2^31
-    ExtendedPublicKey PublicChild(uint32_t i) const;
+    std::optional<ExtendedPublicKey> PublicChild(uint32_t i, std::vector<std::string>& errors) const;
 
     uint32_t GetVersion() const;
     uint8_t GetDepth() const;
