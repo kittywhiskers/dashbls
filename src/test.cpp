@@ -1247,6 +1247,7 @@ TEST_CASE("Schemes") {
 
         std::vector<G2Element> vecSignatureShares;
         std::vector<std::vector<uint8_t>> vecIds;
+        std::vector<std::string> errors;
 
         for (size_t i = 0; i < nSize; ++i) {
             vecIds.push_back(Util::HexToBytes(vecIdsHex[i]));
@@ -1260,9 +1261,11 @@ TEST_CASE("Schemes") {
             REQUIRE(sigShare.Serialize(true) == vecSigShareBytes);
         }
 
-        G2Element thresholdSignature = Threshold::SignatureRecover(vecSignatureShares, {vecIds.begin(), vecIds.end()});
-        REQUIRE(thresholdSignature == thresholdSignatureExpected);
-        REQUIRE(LegacySchemeMPL().Verify(thresholdPublicKey, Bytes{vecSignHash}, thresholdSignature));
+        auto thresholdSignature = Threshold::SignatureRecover(vecSignatureShares, {vecIds.begin(), vecIds.end()}, errors);
+        REQUIRE((thresholdSignature && errors.empty()));
+
+        REQUIRE(thresholdSignature.value() == thresholdSignatureExpected);
+        REQUIRE(LegacySchemeMPL().Verify(thresholdPublicKey, Bytes{vecSignHash}, thresholdSignature.value()));
     }
 }
 
@@ -1416,44 +1419,61 @@ TEST_CASE("Threshold Signatures") {
         REQUIRE(bls::Threshold::Verify({pks[0]}, Bytes{vecHash}, {sig}));
 
         for (size_t i = 0; i < n; i++) {
-            PrivateKey skShare = bls::Threshold::PrivateKeyShare(sks, ids[i]);
-            G1Element pkShare = bls::Threshold::PublicKeyShare(pks, ids[i]);
-            G2Element sigShare1 = bls::Threshold::SignatureShare(sigs, ids[i]);
-            REQUIRE(skShare.GetG1Element() == pkShare);
+            std::vector<std::string> errors;
+            auto skShare = bls::Threshold::PrivateKeyShare(sks, ids[i], errors);
+            REQUIRE((skShare.has_value() && errors.empty()));
+            auto pkShare = bls::Threshold::PublicKeyShare(pks, ids[i], errors);
+            REQUIRE((pkShare.has_value() && errors.empty()));
+            auto sigShare1 = bls::Threshold::SignatureShare(sigs, ids[i], errors);
+            REQUIRE((sigShare1.has_value() && errors.empty()));
 
-            G2Element sigShare2 = bls::Threshold::Sign(skShare, Bytes(vecHash));
+            REQUIRE(skShare->GetG1Element() == pkShare.value());
+
+            G2Element sigShare2 = bls::Threshold::Sign(skShare.value(), Bytes(vecHash));
             REQUIRE(sigShare1 == sigShare2);
-            REQUIRE(bls::Threshold::Verify({pkShare}, Bytes(vecHash), {sigShare1}));
+            REQUIRE(bls::Threshold::Verify({pkShare.value()}, Bytes(vecHash), {sigShare1.value()}));
 
-            skShares.push_back(skShare);
-            pkShares.push_back(pkShare);
-            sigShares.push_back(sigShare1);
+            skShares.push_back(skShare.value());
+            pkShares.push_back(pkShare.value());
+            sigShares.push_back(sigShare1.value());
         }
 
         std::vector<PrivateKey> rsks;
         std::vector<G1Element> rpks;
         std::vector<G2Element> rsigs;
         std::vector<Bytes> rids;
+        std::vector<std::string> errors;
         for (size_t i = 0; i < 2; i++) {
             rsks.push_back(skShares[i]);
             rpks.push_back(pkShares[i]);
             rsigs.push_back(sigShares[i]);
             rids.push_back(ids[i]);
         }
-        PrivateKey recSk = bls::Threshold::PrivateKeyRecover(rsks, rids);
-        G1Element recPk = bls::Threshold::PublicKeyRecover(rpks, rids);
-        G2Element recSig = bls::Threshold::SignatureRecover(rsigs, rids);
-        REQUIRE(recSk != sks[0]);
-        REQUIRE(recPk != pks[0]);
-        REQUIRE(recSig != sig);
+        auto recSk = bls::Threshold::PrivateKeyRecover(rsks, rids, errors);
+        REQUIRE((recSk.has_value() && errors.empty()));
+        auto recPk = bls::Threshold::PublicKeyRecover(rpks, rids, errors);
+        REQUIRE((recPk.has_value() && errors.empty()));
+        auto recSig = bls::Threshold::SignatureRecover(rsigs, rids, errors);
+        REQUIRE((recSig.has_value() && errors.empty()));
+
+        REQUIRE(recSk.value() != sks[0]);
+        REQUIRE(recPk.value() != pks[0]);
+        REQUIRE(recSig.value() != sig);
 
         rsks.push_back(skShares[2]);
         rpks.push_back(pkShares[2]);
         rsigs.push_back(sigShares[2]);
         rids.push_back(ids[2]);
-        recSk = bls::Threshold::PrivateKeyRecover(rsks, rids);
-        recPk = bls::Threshold::PublicKeyRecover(rpks, rids);
-        recSig = bls::Threshold::SignatureRecover(rsigs, rids);
+
+        recSk = bls::Threshold::PrivateKeyRecover(rsks, rids, errors);
+        REQUIRE((recSk.has_value() && errors.empty()));
+
+        recPk = bls::Threshold::PublicKeyRecover(rpks, rids, errors);
+        REQUIRE((recPk.has_value() && errors.empty()));
+
+        recSig = bls::Threshold::SignatureRecover(rsigs, rids, errors);
+        REQUIRE((recSig.has_value() && errors.empty()));
+
         REQUIRE(recSk == sks[0]);
         REQUIRE(recPk == pks[0]);
         REQUIRE(recSig == sig);
