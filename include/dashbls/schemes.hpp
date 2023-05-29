@@ -16,6 +16,7 @@
 #define SRC_BLSSCHEMES_HPP_
 
 #include <iostream>
+#include <optional>
 #include <vector>
 
 #include "relic_conf.h"
@@ -71,9 +72,10 @@ public:
 
     virtual G1Element Aggregate(const vector<G1Element> &publicKeys);
 
-    virtual G2Element AggregateSecure(const std::vector<G1Element>& vecPublicKeys,
-                                      const std::vector<G2Element>& vecSignatures,
-                                      const Bytes& message);
+    virtual std::optional<G2Element> AggregateSecure(const std::vector<G1Element>& vecPublicKeys,
+                                                     const std::vector<G2Element>& vecSignatures,
+                                                     const Bytes& message,
+                                                     strvec_t &errors);
 
     virtual bool VerifySecure(const std::vector<G1Element>& vecPublicKeys,
                               const G2Element& signature,
@@ -102,10 +104,11 @@ public:
 protected:
     const std::string& strCiphersuiteId;
     bool NativeVerify(g1_t *pubKeys, g2_t *mappedHashes, size_t length);
-    G2Element AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
-                              std::vector<G2Element> const &vecSignatures,
-                              const Bytes& message,
-                              bool fLegacy);
+    std::optional<G2Element> AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
+                                             std::vector<G2Element> const &vecSignatures,
+                                             const Bytes& message,
+                                             bool fLegacy,
+                                             strvec_t &errors);
     bool VerifySecure(const std::vector<G1Element>& vecPublicKeys,
                       const G2Element& signature,
                       const Bytes& message,
@@ -244,9 +247,10 @@ public:
 
     vector<uint8_t> Aggregate(const vector<vector<uint8_t>> &signatures) final { throw std::runtime_error("Not supported in LegacySchemeMPL"); }
 
-    G2Element AggregateSecure(const std::vector<G1Element>& vecPublicKeys,
-                              const std::vector<G2Element>& vecSignatures,
-                              const Bytes& message) final;
+    std::optional<G2Element> AggregateSecure(const std::vector<G1Element>& vecPublicKeys,
+                                             const std::vector<G2Element>& vecSignatures,
+                                             const Bytes& message,
+                                             strvec_t &errors) final;
 
     bool VerifySecure(const std::vector<G1Element>& vecPublicKeys,
                       const G2Element& signature,

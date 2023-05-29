@@ -186,12 +186,13 @@ G1Element CoreMPL::Aggregate(const vector<G1Element> &publicKeys)
     return aggregated;
 }
 
-G2Element CoreMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
-                                   std::vector<G2Element> const &vecSignatures,
-                                   const Bytes& message,
-                                   const bool fLegacy) {
+std::optional<G2Element> CoreMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
+                                                  std::vector<G2Element> const &vecSignatures,
+                                                  const Bytes& message,
+                                                  const bool fLegacy,
+                                                  strvec_t &errors) {
     if (vecSignatures.size() != vecPublicKeys.size()) {
-        throw std::invalid_argument("LegacySchemeMPL::AggregateSigs sigs.size() != pubKeys.size()");
+        return error(errors, "LegacySchemeMPL::AggregateSigs(): sigs.size() != pubKeys.size()");
     }
 
     bn_t* computedTs = new bn_t[vecPublicKeys.size()];
@@ -227,10 +228,11 @@ G2Element CoreMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
     return aggSig;
 }
 
-G2Element CoreMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
-                                   std::vector<G2Element> const &vecSignatures,
-                                   const Bytes& message) {
-    return CoreMPL::AggregateSecure(vecPublicKeys, vecSignatures, message, false);
+std::optional<G2Element> CoreMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
+                                                 std::vector<G2Element> const &vecSignatures,
+                                                 const Bytes& message,
+                                                 strvec_t &errors) {
+    return CoreMPL::AggregateSecure(vecPublicKeys, vecSignatures, message, false, errors);
 }
 
 bool CoreMPL::VerifySecure(const std::vector<G1Element>& vecPublicKeys,
@@ -680,10 +682,11 @@ bool LegacySchemeMPL::Verify(const G1Element &pubkey, const Bytes& message, cons
     return CoreMPL::NativeVerify(g1s, g2s, 2);
 }
 
-G2Element LegacySchemeMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
-                                          std::vector<G2Element> const &vecSignatures,
-                                          const Bytes& message) {
-    return CoreMPL::AggregateSecure(vecPublicKeys, vecSignatures, message, true);
+std::optional<G2Element> LegacySchemeMPL::AggregateSecure(std::vector<G1Element> const &vecPublicKeys,
+                                                          std::vector<G2Element> const &vecSignatures,
+                                                          const Bytes& message,
+                                                          strvec_t &errors) {
+    return CoreMPL::AggregateSecure(vecPublicKeys, vecSignatures, message, true, errors);
 }
 
 bool LegacySchemeMPL::VerifySecure(const std::vector<G1Element>& vecPublicKeys,
