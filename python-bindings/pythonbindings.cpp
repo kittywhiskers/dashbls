@@ -48,7 +48,13 @@ PYBIND11_MODULE(blspy, m)
                 std::array<uint8_t, PrivateKey::PRIVATE_KEY_SIZE> data;
                 std::copy(data_ptr, data_ptr + PrivateKey::PRIVATE_KEY_SIZE, data.data());
                 py::gil_scoped_release release;
-                return PrivateKey::FromBytes(data);
+
+                std::vector<std::string> errors;
+                auto sk = PrivateKey::FromBytes(data, errors);
+                if (!sk.has_value()) {
+                    throw std::invalid_argument(errors.at(0));
+                }
+                return *sk;
             })
         .def(
             "__bytes__",
@@ -111,15 +117,33 @@ PYBIND11_MODULE(blspy, m)
                 std::string str(b);
                 py::gil_scoped_release release;
                 const vector<uint8_t> inputVec(str.begin(), str.end());
-                return BasicSchemeMPL().KeyGen(inputVec);
+
+                std::vector<std::string> errors;
+                auto key = BasicSchemeMPL().KeyGen(inputVec, errors);
+                if (!key.has_value()) {
+                    throw std::invalid_argument(errors.at(0));
+                }
+                return *key;
             })
         .def("derive_child_sk", [](const PrivateKey& sk, uint32_t index){
             py::gil_scoped_release release;
-            return BasicSchemeMPL().DeriveChildSk(sk, index);
+
+            std::vector<std::string> errors;
+            auto csk = BasicSchemeMPL().DeriveChildSk(sk, index, errors);
+            if (!csk.has_value()) {
+                throw std::invalid_argument(errors.at(0));
+            }
+            return *csk;
         })
         .def("derive_child_sk_unhardened", [](const PrivateKey& sk, uint32_t index){
             py::gil_scoped_release release;
-            return BasicSchemeMPL().DeriveChildSkUnhardened(sk, index);
+
+            std::vector<std::string> errors;
+            auto csk_u = BasicSchemeMPL().DeriveChildSkUnhardened(sk, index, errors);
+            if (!csk_u.has_value()) {
+                throw std::invalid_argument(errors.at(0));
+            }
+            return *csk_u;
         })
         .def("derive_child_pk_unhardened", [](const G1Element& pk, uint32_t index){
             py::gil_scoped_release release;
@@ -184,15 +208,33 @@ PYBIND11_MODULE(blspy, m)
                 std::string str(b);
                 py::gil_scoped_release release;
                 const vector<uint8_t> inputVec(str.begin(), str.end());
-                return AugSchemeMPL().KeyGen(inputVec);
+
+                std::vector<std::string> errors;
+                auto key = AugSchemeMPL().KeyGen(inputVec, errors);
+                if (!key.has_value()) {
+                    throw std::invalid_argument(errors.at(0));
+                }
+                return *key;
             })
         .def("derive_child_sk", [](const PrivateKey& sk, uint32_t index){
             py::gil_scoped_release release;
-            return AugSchemeMPL().DeriveChildSk(sk, index);
+
+            std::vector<std::string> errors;
+            auto csk = AugSchemeMPL().DeriveChildSk(sk, index, errors);
+            if (!csk.has_value()) {
+                throw std::invalid_argument(errors.at(0));
+            }
+            return *csk;
         })
         .def("derive_child_sk_unhardened", [](const PrivateKey& sk, uint32_t index){
             py::gil_scoped_release release;
-            return AugSchemeMPL().DeriveChildSkUnhardened(sk, index);
+
+            std::vector<std::string> errors;
+            auto csk_u = AugSchemeMPL().DeriveChildSkUnhardened(sk, index, errors);
+            if (!csk_u.has_value()) {
+                throw std::invalid_argument(errors.at(0));
+            }
+            return *csk_u;
         })
         .def("derive_child_pk_unhardened", [](const G1Element& pk, uint32_t index){
             py::gil_scoped_release release;
@@ -267,15 +309,33 @@ PYBIND11_MODULE(blspy, m)
                 std::string str(b);
                 py::gil_scoped_release release;
                 const vector<uint8_t> inputVec(str.begin(), str.end());
-                return PopSchemeMPL().KeyGen(inputVec);
+
+                std::vector<std::string> errors;
+                auto key = PopSchemeMPL().KeyGen(inputVec, errors);
+                if (!key.has_value()) {
+                    throw std::invalid_argument(errors.at(0));
+                }
+                return *key;
             })
         .def("derive_child_sk", [](const PrivateKey& sk, uint32_t index){
             py::gil_scoped_release release;
-            return PopSchemeMPL().DeriveChildSk(sk, index);
+
+            std::vector<std::string> errors;
+            auto csk = PopSchemeMPL().DeriveChildSk(sk, index, errors);
+            if (!csk.has_value()) {
+                throw std::invalid_argument(errors.at(0));
+            }
+            return *csk;
         })
         .def("derive_child_sk_unhardened", [](const PrivateKey& sk, uint32_t index){
             py::gil_scoped_release release;
-            return PopSchemeMPL().DeriveChildSkUnhardened(sk, index);
+
+            std::vector<std::string> errors;
+            auto csk_u = PopSchemeMPL().DeriveChildSkUnhardened(sk, index, errors);
+            if (!csk_u.has_value()) {
+                throw std::invalid_argument(errors.at(0));
+            }
+            return *csk_u;
         })
         .def("derive_child_pk_unhardened", [](const G1Element& pk, uint32_t index){
             py::gil_scoped_release release;
