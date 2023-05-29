@@ -8,18 +8,18 @@
 #include "privatekey.hpp"
 #include "elements.hpp"
 
+#include <optional>
+
 namespace bls {
-
     namespace Threshold {
+        std::optional<PrivateKey> PrivateKeyShare(const std::vector<PrivateKey>& sks, const Bytes& id, strvec_t &errors);
+        std::optional<PrivateKey> PrivateKeyRecover(const std::vector<PrivateKey>& sks, const std::vector<Bytes>& ids, strvec_t &errors);
 
-        PrivateKey PrivateKeyShare(const std::vector<PrivateKey>& sks, const Bytes& id);
-        PrivateKey PrivateKeyRecover(const std::vector<PrivateKey>& sks, const std::vector<Bytes>& ids);
+        std::optional<G1Element> PublicKeyShare(const std::vector<G1Element>& pks, const Bytes& id, strvec_t &errors);
+        std::optional<G1Element> PublicKeyRecover(const std::vector<G1Element>& sks, const std::vector<Bytes>& ids, strvec_t &errors);
 
-        G1Element PublicKeyShare(const std::vector<G1Element>& pks, const Bytes& id);
-        G1Element PublicKeyRecover(const std::vector<G1Element>& sks, const std::vector<Bytes>& ids);
-
-        G2Element SignatureShare(const std::vector<G2Element>& sks, const Bytes& id);
-        G2Element SignatureRecover(const std::vector<G2Element>& sigs, const std::vector<Bytes>& ids);
+        std::optional<G2Element> SignatureShare(const std::vector<G2Element>& sks, const Bytes& id, strvec_t &errors);
+        std::optional<G2Element> SignatureRecover(const std::vector<G2Element>& sigs, const std::vector<Bytes>& ids, strvec_t &errors);
 
         G2Element Sign(const PrivateKey& privateKey, const Bytes& vecMessage);
         bool Verify(const G1Element& pubKey, const Bytes& vecMessage, const G2Element& signature);

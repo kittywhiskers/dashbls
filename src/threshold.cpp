@@ -9,6 +9,7 @@
 #include "schemes.hpp"
 
 #include <memory>
+#include <optional>
 
 static std::unique_ptr<bls::CoreMPL> pThresholdScheme(new bls::LegacySchemeMPL);
 
@@ -84,10 +85,10 @@ namespace bls {
         static const int nIdSize{32};
 
         template <typename BLSType>
-        BLSType Evaluate(const std::vector<BLSType>& vecIn, const Bytes& id);
+        std::optional<BLSType> Evaluate(const std::vector<BLSType>& vecIn, const Bytes& id, strvec_t &errors);
 
         template <typename BLSType>
-        BLSType LagrangeInterpolate(const std::vector<BLSType>& vec, const std::vector<Bytes>& ids);
+        std::optional<BLSType> LagrangeInterpolate(const std::vector<BLSType>& vec, const std::vector<Bytes>& ids, strvec_t &errors);
     } // end namespace Poly
 
     struct PolyOpsBase {
@@ -163,11 +164,11 @@ namespace bls {
     };
 
     template<typename BLSType>
-    BLSType Poly::Evaluate(const std::vector<BLSType>& vecIn, const Bytes& id) {
+    std::optional<BLSType> Poly::Evaluate(const std::vector<BLSType>& vecIn, const Bytes& id, strvec_t &errors) {
         typedef PolyOps<BLSType> Ops;
         Ops ops;
         if (vecIn.size() < 2) {
-            throw std::length_error("At least 2 coefficients required");
+            return error(errors, "Poly::Evaluate(): At least 2 coefficients required");
         }
 
         bn_t x;
@@ -187,15 +188,15 @@ namespace bls {
     }
 
     template<typename BLSType>
-    BLSType Poly::LagrangeInterpolate(const std::vector<BLSType>& vec, const std::vector<Bytes>& ids) {
+    std::optional<BLSType> Poly::LagrangeInterpolate(const std::vector<BLSType>& vec, const std::vector<Bytes>& ids, strvec_t &errors) {
         typedef PolyOps<BLSType> Ops;
         Ops ops;
 
         if (vec.size() < 2) {
-            throw std::length_error("At least 2 shares required");
+            return error(errors, "Poly::LagrangeInterpolate(): At least 2 shares required");
         }
         if (vec.size() != ids.size()) {
-            throw std::length_error("Numbers of shares and ids must be equal");
+            return error(errors, "Poly::LagrangeInterpolate(): Numbers of shares and ids must be equal");
         }
 
         /*
@@ -237,7 +238,7 @@ namespace bls {
         }
         if (bn_is_zero(a)) {
             cleanup();
-            throw std::invalid_argument("Zero id");
+            return error(errors, "Poly::LagrangeInterpolate(): Zero id");
         }
         for (size_t i = 0; i < k; i++) {
             bn_copy(b, ids2[i]);
@@ -246,7 +247,7 @@ namespace bls {
                     ops.SubFP(v, ids2[j], ids2[i]);
                     if (bn_is_zero(v)) {
                         cleanup();
-                        throw std::invalid_argument("Duplicate id");
+                        return error(errors, "Poly::LagrangeInterpolate(): Duplicate id");
                     }
                     ops.MulFP(b, b, v);
                 }
@@ -267,30 +268,30 @@ namespace bls {
         return r;
     }
 
-    PrivateKey Threshold::PrivateKeyShare(const std::vector<PrivateKey>& sks, const Bytes& id) {
-        return Poly::Evaluate(sks, id);
+    std::optional<PrivateKey> Threshold::PrivateKeyShare(const std::vector<PrivateKey>& sks, const Bytes& id, strvec_t &errors) {
+        return Poly::Evaluate(sks, id, errors);
     }
 
-    PrivateKey Threshold::PrivateKeyRecover(const std::vector<PrivateKey>& sks, const std::vector<Bytes>& ids) {
-        return Poly::LagrangeInterpolate(sks, ids);
+    std::optional<PrivateKey> Threshold::PrivateKeyRecover(const std::vector<PrivateKey>& sks, const std::vector<Bytes>& ids, strvec_t &errors) {
+        return Poly::LagrangeInterpolate(sks, ids, errors);
     }
 
-    G1Element Threshold::PublicKeyShare(const std::vector<G1Element>& pks, const Bytes& id) {
-        return Poly::Evaluate(pks, id);
+    std::optional<G1Element> Threshold::PublicKeyShare(const std::vector<G1Element>& pks, const Bytes& id, strvec_t &errors) {
+        return Poly::Evaluate(pks, id, errors);
     }
 
-    G1Element Threshold::PublicKeyRecover(const std::vector<G1Element>& sks, const std::vector<Bytes>& ids) {
-        return Poly::LagrangeInterpolate(sks, ids);
+    std::optional<G1Element> Threshold::PublicKeyRecover(const std::vector<G1Element>& sks, const std::vector<Bytes>& ids, strvec_t &errors) {
+        return Poly::LagrangeInterpolate(sks, ids, errors);
     }
 
-    G2Element Threshold::SignatureShare(const std::vector<G2Element>& sigs, const Bytes& id) {
-        return Poly::Evaluate(sigs, id);
+    std::optional<G2Element> Threshold::SignatureShare(const std::vector<G2Element>& sigs, const Bytes& id, strvec_t &errors) {
+        return Poly::Evaluate(sigs, id, errors);
     }
 
-    G2Element Threshold::SignatureRecover(const std::vector<G2Element>& sigs, const std::vector<Bytes>& ids) {
-        return Poly::LagrangeInterpolate(sigs, ids);
+    std::optional<G2Element> Threshold::SignatureRecover(const std::vector<G2Element>& sigs, const std::vector<Bytes>& ids, strvec_t &errors) {
+        return Poly::LagrangeInterpolate(sigs, ids, errors);
     }
-    
+
     G2Element Threshold::Sign(const PrivateKey& privateKey, const Bytes& vecMessage) {
         return pThresholdScheme->Sign(privateKey, vecMessage);
     }
