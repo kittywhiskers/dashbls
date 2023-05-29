@@ -15,12 +15,13 @@
 #ifndef SRC_BLSUTIL_HPP_
 #define SRC_BLSUTIL_HPP_
 
+#include <array>
 #include <algorithm>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <array>
 
 namespace bls {
 
@@ -159,4 +160,13 @@ class Util {
     static SecureFreeCallback secureFreeCallback;
 };
 } // end namespace bls
+
+/* Error propagation */
+typedef std::vector<std::string> strvec_t;
+
+static inline std::nullopt_t error(strvec_t &errors, const std::string message) {
+    errors.push_back(message);
+    return std::nullopt;
+};
+
 #endif  // SRC_BLSUTIL_HPP_
