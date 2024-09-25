@@ -286,9 +286,115 @@ dnl Relic: Memory-allocation policies
 AC_DEFINE([AUTO],    [1], [Automatic memory allocation.])
 AC_DEFINE([DYNAMIC], [2], [Dynamic memory allocation.])
 
+dnl Relic (BN): Options for the multiple precision
+AC_DEFINE([SINGLE],  [1], [A multiple precision integer can store w words.])
+AC_DEFINE([CARRY],   [2], [A multiple precision integer can store the result of an addition.])
+AC_DEFINE([DOUBLE],  [3], [A multiple precision integer can store the result of a multiplication.])
+
+dnl Relic (BN): Greatest Common Divisor
+dnl AC_DEFINE([BASIC],   [1], [Euclid's standard GCD algorithm.])
+AC_DEFINE([LEHME],   [2], [Lehmer's fast GCD Algorithm.])
+AC_DEFINE([STEIN],   [3], [Stein's binary GCD Algorithm.])
+
+dnl Relic (BN): Integer multiplication
+dnl AC_DEFINE([BASIC],   [1], [Schoolbook multiplication.])
+dnl AC_DEFINE([COMBA],   [3], [Comba multiplication.])
+
+dnl Relic (BN): Integer squaring
+dnl AC_DEFINE([BASIC],   [1], [Schoolbook squaring.])
+dnl AC_DEFINE([COMBA],   [3], [Comba squaring.])
+dnl AC_DEFINE([MULTP],   [4], [Reuse multiplication for squaring.])
+
+dnl Relic (BN): Modular exponentiation
+dnl AC_DEFINE([BASIC],   [1], [Binary modular exponentiation.])
+AC_DEFINE([SLIDE],   [2], [Sliding window modular exponentiation.])
+dnl AC_DEFINE([MONTY],   [9], [Sliding window modular exponentiation.])
+
+dnl Relic (BN): Prime generation
+dnl AC_DEFINE([BASIC],   [1], [Basic prime generation.])
+AC_DEFINE([SAFEP],   [2], [Safe prime generation.])
+AC_DEFINE([STRON],   [3], [Strong prime generation.])
+
 dnl Relic (CP): Support for faster CRT-based exponentiation in factoring-based cryptosystems
 AC_DEFINE([PKCS1],   [2], [RSA PKCS#1 v1.5 padding.])
 AC_DEFINE([PKCS2],   [3], [RSA PKCS#1 v2.1 padding.])
+
+dnl Relic (EB): Fixed-base scalar multiplication
+dnl AC_DEFINE([BASIC],   [1], [Binary method for fixed point multiplication.])
+AC_DEFINE([COMBS],   [2], [Single-table Comb method for fixed point multiplication.])
+AC_DEFINE([COMBD],   [3], [Double-table Comb method for fixed point multiplication.])
+AC_DEFINE([LWNAF],   [4], [Left-to-right window (T)NAF method.])
+
+dnl Relic (EB): Point representation
+dnl AC_DEFINE([BASIC],   [1], [Affine coordinates.])
+AC_DEFINE([PROJC],   [2], [Projective coordinates.])
+
+dnl Relic (EB): Variable-base scalar multiplication
+dnl AC_DEFINE([BASIC],   [1], [Binary double-and-add method.])
+AC_DEFINE([LODAH],   [2], [Lopez-Dahab constant-time point multiplication.])
+dnl AC_DEFINE([LWNAF],   [4], [Left-to-right window (T)NAF method.])
+AC_DEFINE([RWNAF],   [3], [Right-to-left window (T)NAF method.])
+AC_DEFINE([HALVE],   [5], [Halving method.])
+
+dnl Relic (EB): Variable-base simultaneous scalar multiplication
+dnl AC_DEFINE([BASIC],   [1], [Multiplication-and-addition simultaneous multiplication.])
+AC_DEFINE([TRICK],   [2], [Shamir's trick.])
+AC_DEFINE([INTER],   [3], [Interleaving of w-(T)NAFs.])
+AC_DEFINE([JOINT],   [4], [Joint sparse form.])
+
+dnl Relic (EC): Available elliptic curve methods
+AC_DEFINE([PRIME],   [1], [Prime curves.])
+AC_DEFINE([CHAR2],   [2], [Binary curves.])
+AC_DEFINE([EDDIE],   [3], [Prime Edwards curves.])
+
+dnl Relic (EC):  Prime elliptic Edwards curve methods
+dnl AC_DEFINE([BASIC],   [1], [Affine coordinates.])
+dnl AC_DEFINE([PROJC],   [2], [Simple projective twisted Edwards coordinates.])
+AC_DEFINE([EXTND],   [3], [Extended projective twisted Edwards coordinates.])
+
+dnl Relic (ED): Variable-base multiplication method
+dnl AC_DEFINE([BASIC],   [1], [Binary method.])
+dnl AC_DEFINE([SLIDE],   [2], [Sliding window method.])
+dnl AC_DEFINE([MONTY],   [9], [Montgomery ladder method.])
+dnl AC_DEFINE([LWNAF],   [4], [Left-to-right window NAF method.])
+AC_DEFINE([LWREG],   [5], [Left-to-right regular recoding method.])
+
+dnl Relic (EP): Point representation
+dnl AC_DEFINE([BASIC],   [1], [Affine coordinates.])
+dnl AC_DEFINE([PROJC],   [2], [Homogeneous projective coordinates (complete formula).])
+AC_DEFINE([JACOB],   [3], [Jacobian coordinates.])
+
+dnl Relic (FB): Field inversion
+dnl AC_DEFINE([BASIC],   [1], [Inversion by Fermat's Little Theorem.])
+AC_DEFINE([BINAR],   [2], [Binary Inversion algorithm.])
+AC_DEFINE([ALMOS],   [3], [Inversion by the Amost inverse algorithm.])
+AC_DEFINE([EXGCD],   [4], [Inversion by the Extended Euclidean algorithm.])
+AC_DEFINE([ITOHT],   [5], [Inversion by Itoh-Tsuji.])
+AC_DEFINE([CTAIA],   [6], [Constant-time almost inversion algorithm.])
+AC_DEFINE([BRUCH],   [7], [Hardware-friendly inversion by Brunner-Curiger-Hofstetter.])
+AC_DEFINE([LOWER],   [8], [Pass inversion to the lower level.])
+
+dnl Relic (FP): Field inversion
+dnl AC_DEFINE([BASIC],   [1], [Inversion by Fermat's Little Theorem.])
+dnl AC_DEFINE([BINAR],   [2], [Binary Inversion algorithm.])
+AC_DEFINE([MONTY],   [9], [Montgomery inversion.])
+dnl AC_DEFINE([EXGCD],   [4], [Inversion by the Extended Euclidean algorithm.])
+dnl AC_DEFINE([LOWER],   [8], [Pass inversion to the lower level.])
+AC_DEFINE([DIVST],  [10], [Constant-time inversion by division steps.])
+
+dnl Relic (FP): Field squaring
+AC_DEFINE([BASIC],   [1], [Schoolbook multiplication.])
+AC_DEFINE([INTEG],   [2], [Integrated modular squaring.])
+AC_DEFINE([COMBA],   [3], [Comba squaring.])
+AC_DEFINE([MULTP],   [4], [Reuse multiplication for squaring.])
+
+dnl Relic (FP): Modular reduction
+dnl AC_DEFINE([BASIC],   [1], [Division-based reduction.])
+AC_DEFINE([QUICK],   [2], [Fast reduction modulo special form prime.])
+dnl AC_DEFINE([MONTY],   [9], [Montgomery modular reduction.])
+
+dnl Relic (FP): Preferences
+AC_DEFINE([PMERS],   [4], [Pseudo-Mersenne method.])
 
 dnl Relic (MD): Available hash functions
 AC_DEFINE([SH224],   [2], [SHA-224 hash function.])
@@ -310,50 +416,14 @@ dnl AC_DEFINE([RDRND],   [2], [Intel RdRand instruction.])
 dnl AC_DEFINE([UDEV],    [3], [Operating system underlying generator.])
 AC_DEFINE([WCGR],    [4], [Use Windows' CryptGenRandom.])
 
-dnl Relic (BN): Options for the multiple precision
-AC_DEFINE([SINGLE],  [1], [A multiple precision integer can store w words.])
-AC_DEFINE([CARRY],   [2], [A multiple precision integer can store the result of an addition.])
-AC_DEFINE([DOUBLE],  [3], [A multiple precision integer can store the result of a multiplication.])
-
-AC_DEFINE([BASIC],   [1], [Basic method.])
-AC_DEFINE([PRIME],   [1], [Prime curves.])
-AC_DEFINE([TATEP],   [1], [Tate pairing.])
-AC_DEFINE([COMBA],   [2], [Comba method.])
-AC_DEFINE([LEHME],   [2], [Lehmer's fast GCD Algorithm.])
-AC_DEFINE([SAFEP],   [2], [Safe prime generation.])
-AC_DEFINE([QUICK],   [2], [Fast reduction modulo special form prime.])
-AC_DEFINE([BINAR],   [2], [Binary inversion.])
+dnl Relic (PP): Extension field arithmetic
+dnl AC_DEFINE([BASIC],   [1], [Basic extension field arithmetic.])
 AC_DEFINE([LAZYR],   [2], [Lazy-reduced extension field arithmetic.])
-AC_DEFINE([LODAH],   [2], [Lopez-Dahab multiplication.])
-AC_DEFINE([SLIDE],   [2], [Sliding window modular exponentiation.])
-AC_DEFINE([PROJC],   [2], [Projective coordinates.])
-AC_DEFINE([COMBS],   [2], [Single-table comb method.])
-AC_DEFINE([TRICK],   [2], [Shamir's trick.])
-AC_DEFINE([CHAR2],   [2], [Binary curves.])
+
+dnl Relic (PP): Pairing computation
+AC_DEFINE([TATEP],   [1], [Tate pairing.])
 AC_DEFINE([WEILP],   [2], [Weil pairing.])
-AC_DEFINE([MONTY],   [3], [Montgomery method.])
-AC_DEFINE([STEIN],   [3], [Stein's binary GCD Algorithm.])
-AC_DEFINE([STRON],   [3], [Strong prime generation.])
-AC_DEFINE([INTEG],   [3], [Integrated modular addtion.])
-AC_DEFINE([INTER],   [3], [Interleaving of w-(T)NAFs.])
-AC_DEFINE([ALMOS],   [3], [Almost inverse algorithm.])
-AC_DEFINE([JACOB],   [3], [Jacobian coordinates.])
-AC_DEFINE([COMBD],   [3], [Double-table comb method.])
-AC_DEFINE([HALVE],   [3], [Halving.])
-AC_DEFINE([EDDIE],   [3], [Edwards curves.])
-AC_DEFINE([EXTND],   [3], [Extended projective twisted Edwards coordinates.])
 AC_DEFINE([OATEP],   [3], [Optimal ate pairing.])
-AC_DEFINE([PMERS],   [4], [Pseudo-Mersenne method.])
-AC_DEFINE([MULTP],   [4], [Reuse multiplication for squaring.])
-AC_DEFINE([EXGCD],   [4], [Extended Euclidean algorithm.])
-AC_DEFINE([LWNAF],   [4], [Left-to-right Width-w NAF.])
-AC_DEFINE([JOINT],   [4], [Joint sparse form.])
-AC_DEFINE([DIVST],   [5], [Constant-time inversion by Bernstein-Yang division steps.])
-AC_DEFINE([ITOHT],   [5], [Itoh-Tsuji inversion.])
-AC_DEFINE([LWREG],   [5], [Left-to-right Width-w NAF.])
-AC_DEFINE([BRUCH],   [6], [Hardware-friendly inversion by Brunner-Curiger-Hofstetter.])
-AC_DEFINE([CTAIA],   [7], [Constant-time version of almost inverse.])
-AC_DEFINE([LOWER],   [8], [Use implementation provided by the lower layer.])
 
 if test x"$use_debug" = x"yes"; then
   AC_DEFINE([DEBUG],   [1], [Define this symbol if debugging support is enabled])
