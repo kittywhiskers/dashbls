@@ -62,6 +62,7 @@ BN_SOURCES = \
 	depends/relic/src/bn/relic_bn_factor.c \
 	depends/relic/src/bn/relic_bn_gcd.c \
 	depends/relic/src/bn/relic_bn_inv.c \
+	depends/relic/src/bn/relic_bn_lag.c \
 	depends/relic/src/bn/relic_bn_lcm.c \
 	depends/relic/src/bn/relic_bn_mem.c \
 	depends/relic/src/bn/relic_bn_mod.c \
@@ -83,6 +84,7 @@ FP_SOURCES = \
 	depends/relic/src/fp/relic_fp_mul.c \
 	depends/relic/src/fp/relic_fp_param.c \
 	depends/relic/src/fp/relic_fp_prime.c \
+	depends/relic/src/fp/relic_fp_smb.c \
 	depends/relic/src/fp/relic_fp_rdc.c \
 	depends/relic/src/fp/relic_fp_shift.c \
 	depends/relic/src/fp/relic_fp_sqr.c \
@@ -271,6 +273,7 @@ MD_SOURCES = \
 
 EXTRA_DIST += \
 	depends/relic/src/arch/relic_arch_arm.c \
+	depends/relic/src/arch/relic_arch_a64.c \
 	depends/relic/src/arch/relic_arch_none.c \
 	depends/relic/src/arch/relic_arch_x64.c \
 	depends/relic/src/arch/relic_arch_x86.c
@@ -296,7 +299,8 @@ RELIC_SOURCES += $(BN_SOURCES) \
 	depends/relic/src/low/easy/relic_bn_mod_low.c \
 	depends/relic/src/low/easy/relic_bn_mul_low.c \
 	depends/relic/src/low/easy/relic_bn_shift_low.c \
-	depends/relic/src/low/easy/relic_bn_sqr_low.c
+	depends/relic/src/low/easy/relic_bn_sqr_low.c \
+	depends/relic/src/low/easy/relic_fp_smb_low.c
 endif
 
 if WITH_FP
@@ -427,12 +431,17 @@ RELIC_SOURCES += \
 	depends/relic/src/cp/relic_cp_ibe.c \
 	depends/relic/src/cp/relic_cp_mklhs.c \
 	depends/relic/src/cp/relic_cp_mpss.c \
+	depends/relic/src/cp/relic_cp_pbpsi.c \
 	depends/relic/src/cp/relic_cp_pcdel.c \
 	depends/relic/src/cp/relic_cp_phpe.c \
 	depends/relic/src/cp/relic_cp_pok.c \
 	depends/relic/src/cp/relic_cp_pss.c \
 	depends/relic/src/cp/relic_cp_rabin.c \
 	depends/relic/src/cp/relic_cp_rsa.c \
+	depends/relic/src/cp/relic_cp_rsapsi.c \
+	depends/relic/src/cp/relic_cp_shipsi.c \
+	depends/relic/src/cp/relic_cp_shpe.c \
+	depends/relic/src/cp/relic_cp_smlers.c \
 	depends/relic/src/cp/relic_cp_sok.c \
 	depends/relic/src/cp/relic_cp_sokaka.c \
 	depends/relic/src/cp/relic_cp_vbnn.c \
@@ -454,8 +463,9 @@ endif
 
 if WITH_MPC
 RELIC_SOURCES += \
-	depends/relic/src/mpc/relic_mt_mpc.c \
-	depends/relic/src/mpc/relic_pc_mpc.c
+	depends/relic/src/mpc/relic_mpc_sss.c \
+	depends/relic/src/mpc/relic_mpc_mt.c \
+	depends/relic/src/mpc/relic_mpc_pc.c
 endif
 
 librelic_la_SOURCES = \
