@@ -132,12 +132,13 @@ fi
 dnl Define enum mappings for relic config
 AC_DEFINE([RLC_VERSION], ["0.5.0"], [Relic Version])
 
-dnl dashbls: Library processor architecture
+dnl Relic: Library processor architecture
 AC_DEFINE([AVR],     [1], [Atmel AVR ATMega128 8-bit architecture.])
 AC_DEFINE([MSP],     [2], [MSP430 16-bit architecture.])
 AC_DEFINE([ARM],     [3], [ARM 32-bit architecture.])
-AC_DEFINE([X86],     [4], [Intel x86-compatible 32-bit architecture.])
-AC_DEFINE([X64],     [5], [AMD64-compatible 64-bit architecture.])
+AC_DEFINE([A64],     [4], [ARM 64-bit architecture.])
+AC_DEFINE([X86],     [5], [Intel x86-compatible 32-bit architecture.])
+AC_DEFINE([X64],     [6], [AMD64-compatible 64-bit architecture.])
 
 dnl Relic: Generic options
 AC_DEFINE([RELIC_NONE],    [0], [Unknown or unrecognized parameter.])
@@ -267,11 +268,11 @@ AC_DEFINE([PTHREAD], [2], [POSIX multithreading support.])
 dnl Relic: Supported operating systems
 AC_DEFINE([LINUX],   [1], [GNU/Linux operating system.])
 AC_DEFINE([FREEBSD], [2], [FreeBSD operating system.])
-AC_DEFINE([MACOSX],  [3], [MacOS operating system.])
-AC_DEFINE([WINDOWS], [4], [Windows operating system.])
-AC_DEFINE([DROID],   [5], [Android operating system.])
-AC_DEFINE([DUINO],   [6], [Arduino platform.])
-dnl AC_DEFINE([OPENBSD], [7], [OpenBSD operating system.])
+AC_DEFINE([NETBSD],  [3], [NetBSD operating system.])
+AC_DEFINE([MACOSX],  [4], [MacOS operating system.])
+AC_DEFINE([WINDOWS], [5], [Windows operating system.])
+AC_DEFINE([DROID],   [6], [Android operating system.])
+AC_DEFINE([DUINO],   [7], [Arduino platform.])
 
 dnl Relic: Supported timers
 AC_DEFINE([HREAL],   [1], [Per-process high-resolution timer.])
@@ -293,8 +294,8 @@ AC_DEFINE([DOUBLE],  [3], [A multiple precision integer can store the result of 
 
 dnl Relic (BN): Greatest Common Divisor
 dnl AC_DEFINE([BASIC],   [1], [Euclid's standard GCD algorithm.])
-AC_DEFINE([LEHME],   [2], [Lehmer's fast GCD Algorithm.])
-AC_DEFINE([STEIN],   [3], [Stein's binary GCD Algorithm.])
+dnl AC_DEFINE([BINAR],   [2], [Binary GCD algorithm.])
+AC_DEFINE([LEHME],   [3], [Lehmer's fast GCD Algorithm.])
 
 dnl Relic (BN): Integer multiplication
 dnl AC_DEFINE([BASIC],   [1], [Schoolbook multiplication.])
@@ -674,7 +675,7 @@ AC_DEFINE(BN_GCD, BASIC, Chosen multiple precision greatest common divisor metho
 AC_DEFINE(BN_GEN, BASIC, Chosen prime generation algorithm.)
 
 AC_DEFINE(FP_PRIME, 381, Prime field size in bits.)
-AC_DEFINE(FP_METHD, "INTEG;INTEG;INTEG;MONTY;LOWER;SLIDE", Prime field arithmetic method.)
+AC_DEFINE(FP_METHD, "INTEG;INTEG;INTEG;MONTY;MONTY;JMPDS;SLIDE", Prime field arithmetic method.)
 AC_DEFINE(FP_KARAT, 0, Number of Karatsuba steps.)
 AC_DEFINE(FP_WIDTH, 4, Width of window processing for exponentiation methods.)
 AC_DEFINE(FP_ADD, INTEG, Chosen prime field multiplication method.)
@@ -682,6 +683,7 @@ AC_DEFINE(FP_MUL, INTEG, Chosen prime field multiplication method.)
 AC_DEFINE(FP_SQR, INTEG, Chosen prime field multiplication method.)
 AC_DEFINE(FP_RDC, MONTY, Chosen prime field reduction method.)
 AC_DEFINE(FP_INV, LOWER, Chosen prime field inversion method.)
+AC_DEFINE(FP_SMB, JMPDS, Chosen prime field Legendre symbol.)
 AC_DEFINE(FP_EXP, SLIDE, Chosen multiple precision modular exponentiation method.)
 
 AC_DEFINE(FPX_METHD, "INTEG;INTEG;LAZYR", Prime extension field arithmetic method.)
