@@ -307,6 +307,32 @@ fn main() {
         fs::remove_dir_all(&bls_dash_build_path).expect("can't clean build directory");
     }
     fs::create_dir_all(&bls_dash_build_path).expect("can't create build directory");
+
+    let cc_path_output = Command::new("xcrun")
+        .arg("--sdk")
+        .arg("iphoneos")
+        .arg("--find")
+        .arg("clang")
+        .output()
+        .expect("Failed to find clang");
+    let cc_path = String::from_utf8_lossy(&cc_path_output.stdout).trim().to_string();
+
+    let cxx_path_output = Command::new("xcrun")
+        .arg("--sdk")
+        .arg("iphoneos")
+        .arg("--find")
+        .arg("clang++")
+        .output()
+        .expect("Failed to find clang++");
+    let cxx_path = String::from_utf8_lossy(&cxx_path_output.stdout).trim().to_string();
+
+    // Print the paths for clang and clang++
+    println!("cargo:warning=CC path: {}", cc_path);
+    println!("cargo:warning=CXX path: {}", cxx_path);
+
+    std::env::set_var("CC", cc_path);
+    std::env::set_var("CXX", cxx_path);
+
     let output = Command::new("sh")
         .current_dir(&root_path)
         .arg(script)
@@ -367,6 +393,8 @@ fn main() {
 
     println!("cargo:rustc-link-search={}", target_path.display());
     println!("cargo:rustc-link-lib=static=gmp");
+    //println!("cargo:rustc-link-lib=c++");
+    //println!("cargo:rustc-link-lib=c");
     //println!("cargo:rustc-link-lib=static=sodium");
     println!("cargo:rustc-link-lib=static=relic_s");
     println!("cargo:rustc-link-lib=static=bls");
