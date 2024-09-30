@@ -51,7 +51,7 @@ version_min_flag() {
 
 prepare() {
     download_gmp() {
-        GMP_VERSION="6.2.1"
+        GMP_VERSION="6.3.0"
         CURRENT_DIR=$(pwd)
         echo "$CURRENT_DIR"
         # shellcheck disable=SC2039,SC2164
@@ -65,8 +65,6 @@ prepare() {
         pushd contrib
         tar xfj "gmp-${GMP_VERSION}.tar.bz2"
         mv gmp-${GMP_VERSION} gmp
-        rm gmp/compat.c && cp ../../contrib/gmp-patch-6.2.1/compat.c gmp/compat.c
-        rm gmp/longlong.h && cp ../../contrib/gmp-patch-6.2.1/longlong.h gmp/longlong.h
         # shellcheck disable=SC2039,SC2164
         popd #contrib
         # shellcheck disable=SC2039,SC2164
@@ -115,7 +113,7 @@ build_gmp_arch() {
     ARCH=$2
     PFX=${PLATFORM}-${ARCH}
     # why this works with this host only?
-    HOST=arm-apple-darwin
+    HOST=aarch64-apple-darwin
     # shellcheck disable=SC2039,SC2164
     pushd ${BUILD}
     SDK=$(xcrun --sdk "$PLATFORM" --show-sdk-path)
