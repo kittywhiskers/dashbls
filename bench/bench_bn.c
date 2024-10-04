@@ -281,21 +281,26 @@ static void util(void) {
 }
 
 static void arith(void) {
-	bn_t a, b, c, d, e;
+	bn_t a, b, c, d[3], e[3];
+	crt_t crt;
 	dig_t f;
 	int len;
 
 	bn_null(a);
 	bn_null(b);
 	bn_null(c);
-	bn_null(d);
-	bn_null(e);
+	crt_null(crt);
 
 	bn_new(a);
 	bn_new(b);
 	bn_new(c);
-	bn_new(d);
-	bn_new(e);
+	for (int j = 0; j < 3; j++) {
+		bn_null(d[j]);
+		bn_null(e[j]);
+		bn_new(d[j]);
+		bn_new(e[j]);
+	}
+	crt_new(crt);
 
 	BENCH_RUN("bn_add") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
@@ -433,7 +438,7 @@ static void arith(void) {
 	BENCH_RUN("bn_div_rem") {
 		bn_rand(a, RLC_POS, 2 * RLC_BN_BITS - RLC_DIG / 2);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_div_rem(c, d, a, b));
+		BENCH_ADD(bn_div_rem(c, d[0], a, b));
 	}
 	BENCH_END;
 
@@ -483,9 +488,9 @@ static void arith(void) {
 		if (bn_is_even(b)) {
 			bn_add_dig(b, b, 1);
 		}
-		bn_mod_pre(d, b);
+		bn_mod_pre(d[0], b);
 #endif
-		BENCH_ADD(bn_mod(c, a, b, d));
+		BENCH_ADD(bn_mod(c, a, b, d[0]));
 	}
 	BENCH_END;
 
@@ -501,7 +506,7 @@ static void arith(void) {
 #if BN_MOD == BARRT || !defined(STRIP)
 	BENCH_RUN("bn_mod_pre_barrt") {
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_mod_pre_barrt(d, b));
+		BENCH_ADD(bn_mod_pre_barrt(d[0], b));
 	}
 	BENCH_END;
 #endif
@@ -510,8 +515,8 @@ static void arith(void) {
 	BENCH_RUN("bn_mod_barrt") {
 		bn_rand(a, RLC_POS, 2 * RLC_BN_BITS - RLC_DIG / 2);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		bn_mod_pre_barrt(d, b);
-		BENCH_ADD(bn_mod_barrt(c, a, b, d));
+		bn_mod_pre_barrt(d[0], b);
+		BENCH_ADD(bn_mod_barrt(c, a, b, d[0]));
 	}
 	BENCH_END;
 #endif
@@ -522,7 +527,7 @@ static void arith(void) {
 		if (bn_is_even(b)) {
 			bn_add_dig(b, b, 1);
 		}
-		BENCH_ADD(bn_mod_pre_monty(d, b));
+		BENCH_ADD(bn_mod_pre_monty(d[0], b));
 	}
 	BENCH_END;
 
@@ -544,8 +549,8 @@ static void arith(void) {
 			bn_add_dig(b, b, 1);
 		}
 		bn_mod(a, a, b);
-		bn_mod_pre_monty(d, b);
-		BENCH_ADD(bn_mod_monty(c, a, b, d));
+		bn_mod_pre_monty(d[0], b);
+		BENCH_ADD(bn_mod_monty(c, a, b, d[0]));
 	}
 	BENCH_END;
 
@@ -557,8 +562,8 @@ static void arith(void) {
 			bn_add_dig(b, b, 1);
 		}
 		bn_mod(a, a, b);
-		bn_mod_pre_monty(d, b);
-		BENCH_ADD(bn_mod_monty_basic(c, a, b, d));
+		bn_mod_pre_monty(d[0], b);
+		BENCH_ADD(bn_mod_monty_basic(c, a, b, d[0]));
 	}
 	BENCH_END;
 #endif
@@ -571,8 +576,8 @@ static void arith(void) {
 			bn_add_dig(b, b, 1);
 		}
 		bn_mod(a, a, b);
-		bn_mod_pre_monty(d, b);
-		BENCH_ADD(bn_mod_monty_comba(c, a, b, d));
+		bn_mod_pre_monty(d[0], b);
+		BENCH_ADD(bn_mod_monty_comba(c, a, b, d[0]));
 	}
 	BENCH_END;
 #endif
@@ -584,7 +589,7 @@ static void arith(void) {
 			bn_add_dig(b, b, 1);
 		}
 		bn_mod(a, a, b);
-		bn_mod_pre_monty(d, b);
+		bn_mod_pre_monty(d[0], b);
 		BENCH_ADD(bn_mod_monty_back(c, c, b));
 	}
 	BENCH_END;
@@ -596,7 +601,7 @@ static void arith(void) {
 		bn_set_2b(b, RLC_BN_BITS);
 		bn_rand(c, RLC_POS, RLC_DIG);
 		bn_sub(b, b, c);
-		BENCH_ADD(bn_mod_pre_pmers(d, b));
+		BENCH_ADD(bn_mod_pre_pmers(d[0], b));
 	}
 	BENCH_END;
 
@@ -605,8 +610,8 @@ static void arith(void) {
 		bn_set_2b(b, RLC_BN_BITS);
 		bn_rand(c, RLC_POS, RLC_DIG);
 		bn_sub(b, b, c);
-		bn_mod_pre_pmers(d, b);
-		BENCH_ADD(bn_mod_pmers(c, a, b, d));
+		bn_mod_pre_pmers(d[0], b);
+		BENCH_ADD(bn_mod_pmers(c, a, b, d[0]));
 	}
 	BENCH_END;
 #endif
@@ -656,9 +661,23 @@ static void arith(void) {
 
 	BENCH_RUN("bn_mxp_dig") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
-		bn_rand(d, RLC_POS, RLC_DIG);
-		bn_get_dig(&f, d);
+		bn_rand(d[0], RLC_POS, RLC_DIG);
+		bn_get_dig(&f, d[0]);
 		BENCH_ADD(bn_mxp_dig(c, a, f, b));
+	}
+	BENCH_END;
+
+	bn_gen_prime(crt->p, RLC_BN_BITS / 2);
+	bn_gen_prime(crt->q, RLC_BN_BITS / 2);
+	bn_mul(crt->n, crt->p, crt->q);
+	bn_mod_inv(crt->qi, crt->q, crt->p);
+	bn_sub_dig(crt->dp, crt->p, 1);
+	bn_sub_dig(crt->dq, crt->q, 1);
+	BENCH_RUN("bn_mxp_crt") {
+		bn_rand(c, RLC_POS, RLC_BN_BITS);
+		bn_mod(a, c, crt->dp);
+		bn_mod(b, c, crt->dq);
+		BENCH_ADD(bn_mxp_crt(c, c, a, b, crt, 0));
 	}
 	BENCH_END;
 
@@ -693,11 +712,11 @@ static void arith(void) {
 	BENCH_END;
 #endif
 
-#if BN_GCD == STEIN || !defined(STRIP)
-	BENCH_RUN("bn_gcd_stein") {
+#if BN_GCD == BINAR || !defined(STRIP)
+	BENCH_RUN("bn_gcd_binar") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_gcd_stein(c, a, b));
+		BENCH_ADD(bn_gcd_binar(c, a, b));
 	}
 	BENCH_END;
 #endif
@@ -713,7 +732,7 @@ static void arith(void) {
 	BENCH_RUN("bn_gcd_ext") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_gcd_ext(c, d, e, a, b));
+		BENCH_ADD(bn_gcd_ext(c, d[0], d[1], a, b));
 	}
 	BENCH_END;
 
@@ -721,7 +740,16 @@ static void arith(void) {
 	BENCH_RUN("bn_gcd_ext_basic") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_gcd_ext_basic(c, d, e, a, b));
+		BENCH_ADD(bn_gcd_ext_basic(c, d[0], d[1], a, b));
+	}
+	BENCH_END;
+#endif
+
+#if BN_GCD == BINAR || !defined(STRIP)
+	BENCH_RUN("bn_gcd_ext_binar") {
+		bn_rand(a, RLC_POS, RLC_BN_BITS);
+		bn_rand(b, RLC_POS, RLC_BN_BITS);
+		BENCH_ADD(bn_gcd_ext_binar(c, d[0], d[1], a, b));
 	}
 	BENCH_END;
 #endif
@@ -730,16 +758,16 @@ static void arith(void) {
 	BENCH_RUN("bn_gcd_ext_lehme") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_gcd_ext_lehme(c, d, e, a, b));
+		BENCH_ADD(bn_gcd_ext_lehme(c, d[0], d[1], a, b));
 	}
 	BENCH_END;
 #endif
 
-#if BN_GCD == STEIN || !defined(STRIP)
-	BENCH_RUN("bn_gcd_ext_stein") {
+#if BN_GCD == BINAR || !defined(STRIP)
+	BENCH_RUN("bn_gcd_ext_binar") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_gcd_ext_stein(c, d, e, a, b));
+		BENCH_ADD(bn_gcd_ext_binar(c, d[0], d[1], a, b));
 	}
 	BENCH_END;
 #endif
@@ -747,14 +775,14 @@ static void arith(void) {
 	BENCH_RUN("bn_gcd_ext_mid") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_gcd_ext_mid(c, c, d, d, a, b));
+		BENCH_ADD(bn_gcd_ext_mid(c, c, d[0], d[1], a, b));
 	}
 	BENCH_END;
 
 	BENCH_RUN("bn_gcd_ext_dig") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
 		bn_rand(b, RLC_POS, RLC_DIG);
-		BENCH_ADD(bn_gcd_ext_dig(c, d, e, a, b->dp[0]));
+		BENCH_ADD(bn_gcd_ext_dig(c, d[0], d[1], a, b->dp[0]));
 	}
 	BENCH_END;
 
@@ -769,7 +797,7 @@ static void arith(void) {
 
 	BENCH_RUN("bn_smb_leg") {
 		bn_rand(a, RLC_POS, RLC_BN_BITS);
-		BENCH_ADD(bn_smb_leg(c, a, b));
+		BENCH_ADD(bn_smb_leg(a, b));
 	}
 	BENCH_END;
 
@@ -779,7 +807,7 @@ static void arith(void) {
 		if (bn_is_even(b)) {
 			bn_add_dig(b, b, 1);
 		}
-		BENCH_ADD(bn_smb_jac(c, a, b));
+		BENCH_ADD(bn_smb_jac(a, b));
 	}
 	BENCH_END;
 
@@ -807,8 +835,32 @@ static void arith(void) {
 
 	/* It should be the case that a is prime here. */
 	BENCH_RUN("bn_mod_inv") {
-		bn_rand(b, RLC_POS, RLC_BN_BITS);
+		bn_rand_mod(b, a);
 		BENCH_ADD(bn_mod_inv(c, b, a));
+	}
+	BENCH_END;
+
+	/* It should be the case that a is prime here. */
+	BENCH_RUN("bn_mod_inv_sim (2)") {
+		bn_rand_mod(d[0], a);
+		bn_rand_mod(d[1], a);
+		BENCH_ADD(bn_mod_inv_sim(d, d, a, 2));
+	}
+	BENCH_END;
+
+	BENCH_RUN("bn_lag (2)") {
+		bn_rand_mod(d[0], a);
+		bn_rand_mod(d[1], a);
+		BENCH_ADD(bn_lag(d, d, a, 2));
+	}
+	BENCH_END;
+
+	BENCH_RUN("bn_evl (2)") {
+		bn_rand_mod(b, a);
+		bn_rand_mod(d[0], a);
+		bn_rand_mod(d[1], a);
+		bn_lag(d, d, a, 2);
+		BENCH_ADD(bn_evl(c, d, b, a, 2));
 	}
 	BENCH_END;
 
@@ -850,8 +902,8 @@ static void arith(void) {
 		BENCH_RUN("bn_rec_tnaf") {
 			int8_t tnaf[RLC_FB_BITS + 8];
 			int len = RLC_BN_BITS + 1;
-			eb_curve_get_ord(e);
-			bn_rand_mod(a, e);
+			eb_curve_get_ord(b);
+			bn_rand_mod(a, b);
 			if (eb_curve_opt_a() == RLC_ZERO) {
 				BENCH_ADD((len = RLC_FB_BITS + 8, bn_rec_tnaf(tnaf, &len, a, -1, RLC_FB_BITS, 4)));
 			} else {
@@ -862,8 +914,8 @@ static void arith(void) {
 
 		BENCH_RUN("bn_rec_rtnaf") {
 			int8_t tnaf[RLC_FB_BITS + 8];
-			eb_curve_get_ord(e);
-			bn_rand_mod(a, e);
+			eb_curve_get_ord(b);
+			bn_rand_mod(a, b);
 			if (eb_curve_opt_a() == RLC_ZERO) {
 				BENCH_ADD((len = RLC_FB_BITS + 8, bn_rec_rtnaf(tnaf, &len, a, -1, RLC_FB_BITS, 4)));
 			} else {
@@ -892,36 +944,25 @@ static void arith(void) {
 
 #if defined(WITH_EP) && defined(EP_ENDOM) && (EP_MUL == LWNAF || EP_FIX == COMBS || EP_FIX == LWNAF || EP_SIM == INTER || !defined(STRIP))
 	if (ep_param_set_any_endom() == RLC_OK) {
-		bn_t v1[3], v2[3];
-
-		for (int j = 0; j < 3; j++) {
-			bn_new(v1[j]);
-			bn_new(v2[j]);
-		}
-
 		BENCH_RUN("bn_rec_glv") {
-			bn_rand(a, RLC_POS, RLC_FP_BITS);
-			ep_curve_get_v1(v1);
-			ep_curve_get_v2(v2);
-			ep_curve_get_ord(e);
-			bn_rand_mod(a, e);
-			BENCH_ADD(bn_rec_glv(b, c, a, e, (const bn_t *)v1,
-							(const bn_t *)v2));
+			ep_curve_get_v1(d);
+			ep_curve_get_v2(e);
+			ep_curve_get_ord(c);
+			bn_rand_mod(a, c);
+			BENCH_ADD(bn_rec_glv(a, b, a, c, (const bn_t *)d, (const bn_t *)e));
 		}
 		BENCH_END;
-
-		for (int j = 0; j < 3; j++) {
-			bn_free(v1[j]);
-			bn_free(v2[j]);
-		}
 	}
 #endif /* WITH_EP && EP_KBLTZ */
 
 	bn_free(a);
 	bn_free(b);
 	bn_free(c);
-	bn_free(d);
-	bn_free(e);
+	for (int j = 0; j < 3; j++) {
+		bn_free(d[j]);
+		bn_free(e[j]);
+	}
+	crt_free(crt);
 }
 
 int main(void) {

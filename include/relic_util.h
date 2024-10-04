@@ -116,6 +116,13 @@
 #define RLC_HIGH(D)				(D >> (RLC_DIG >> 1))
 
 /**
+ * Returns the sign bit of a digit.
+ *
+ * @param[in] D			- the digit.
+ */
+#define RLC_SIGN(D)				(((dig_t)D) >> (RLC_DIG - 1))
+
+/**
  * Selects between two values based on the value of a given flag.
  *
  * @param[in] A			- the first argument.
@@ -289,6 +296,14 @@ int util_bits_dig(dig_t a);
  * @return RLC_EQ if they are equal and RLC_NE otherwise.
  */
 int util_cmp_const(const void *a, const void *b, int n);
+
+/**
+ * Computes a random permutation in [0, n-1].
+ *
+ * @param[out] p 			- the resulting permutation.
+ * @param[in] n 			- the size of the permutation.
+ */
+void util_perm(unsigned int p[], int n);
 
 /**
  * Formats and prints data following a printf-like syntax.
