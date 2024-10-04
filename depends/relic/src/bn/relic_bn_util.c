@@ -56,6 +56,7 @@ void bn_copy(bn_t c, const bn_t a) {
 
 	c->used = a->used;
 	c->sign = a->sign;
+	bn_trim(c);
 }
 
 void bn_abs(bn_t c, const bn_t a) {
@@ -219,7 +220,7 @@ void bn_rand(bn_t a, int sign, int bits) {
 	bn_trim(a);
 }
 
-void bn_rand_mod(bn_t a, bn_t b) {
+void bn_rand_mod(bn_t a, const bn_t b) {
 	bn_t t;
 
 	bn_null(t);
@@ -350,6 +351,7 @@ void bn_read_str(bn_t a, const char *str, int len, int radix) {
 		}
 
 		a->sign = sign;
+		bn_trim(a);
 	} RLC_CATCH_ANY {
 		RLC_THROW(ERR_CAUGHT);
 	}

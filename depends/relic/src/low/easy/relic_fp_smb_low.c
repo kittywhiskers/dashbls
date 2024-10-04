@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (c) 2017 RELIC Authors
+ * Copyright (c) 2021 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -24,45 +24,42 @@
 /**
  * @file
  *
- * Implementation of the low-level prime field multiplication functions.
+ * Implementation of the low-level inversion functions.
  *
- * @ingroup bn
+ * @&version $Id$
+ * @ingroup fp
  */
 
-#include "macro.s"
+#include "relic_bn.h"
+#include "relic_bn_low.h"
+#include "relic_fp.h"
+#include "relic_fp_low.h"
+#include "relic_core.h"
 
-.text
+/*============================================================================*/
+/* Public definitions                                                         */
+/*============================================================================*/
 
-.global fp_muln_low
-.global fp_mulm_low
+int fp_smbm_low(const dig_t *a) {
+	bn_st e;
+	dig_t t[RLC_FP_DIGS];
 
-fp_muln_low:
-	movq %rdx,%rcx
-	FP_MULN_LOW %rdi, %r8, %r9, %r10, %rsi, %rcx
-	ret
+	bn_make(&e, RLC_FP_DIGS);
 
-fp_mulm_low:
-	push	%r12
-	push	%r13
-	push	%r14
-	push	%r15
-	push 	%rbx
-	push	%rbp
-	subq 	$128, %rsp
+	e.used = RLC_FP_DIGS;
+	dv_copy(e.dp, fp_prime_get(), RLC_FP_DIGS);
+	bn_rsh1_low(e.dp, e.dp, RLC_FP_DIGS);
+#if AUTO == ALLOC
+	fp_exp(t, a, &e);
+#else
+	fp_exp(t, (const fp_t)a, &e);
+#endif
 
-	movq 	%rdx,%rcx
-	leaq 	p0(%rip), %rbx
+	int r = (fp_cmp_dig(t, 1) == RLC_EQ);
+	fp_negm_low(t, t);
+	r = RLC_SEL(r, -(fp_cmp_dig(t, 1) == RLC_EQ), !r);
 
-	FP_MULN_LOW %rsp, %r8, %r9, %r10, %rsi, %rcx
+	bn_clean(&e);
 
-	FP_RDCN_LOW %rdi, %r8, %r9, %r10, %rsp, %rbx
-
-	addq	$128, %rsp
-
-	pop		%rbp
-	pop		%rbx
-	pop		%r15
-	pop		%r14
-	pop		%r13
-	pop		%r12
-	ret
+	return r;
+}

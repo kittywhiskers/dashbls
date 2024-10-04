@@ -32,7 +32,7 @@
  *
  * The scalar multiplication functions are only guaranteed to work
  * in the large prime order subgroup. If you need a generic scalar
- * multiplication function, use ep_mul_basic().
+ * multiplication function, use ep_mul_basic.
  *
  * @ingroup ep
  */
@@ -99,6 +99,12 @@ enum {
 	BN_P256,
 	/** Barreto-Naehrig curve standardized in China. */
 	SM9_P256,
+	/** Barreto-Lynn-Scott curve with embedding degree 24 (SNARK curve). */
+	B24_P315,
+	/** Barreto-Lynn-Scott curve with embedding degree 24 (SNARK curve). */
+	B24_P317,
+	/** Barreto-Lynn-Scott curve with embedding degree 12 (SNARK curve). */
+	B12_P377,
 	/** Barreto-Lynn-Scott curve with embedding degree 12 (ZCash curve). */
 	B12_P381,
 	/** Barreto-Naehrig curve with negative x. */
@@ -1148,14 +1154,15 @@ void ep_mul_sim_joint(ep_t r, const ep_t p, const bn_t k, const ep_t q,
 		const bn_t m);
 
 /**
- * Multiplies simultaneously elements from G_2. Computes R = \Sum_i=0..n k_iP_i.
+ * Multiplies and adds multiple elliptic curve points simultaneously.
+ * Computes R = \Sum_i=0..n [k_i]P_i.
  *
  * @param[out] r			- the result.
- * @param[out] p			- the G_2 elements to multiply.
+ * @param[out] p			- the elements to multiply.
  * @param[out] k			- the integer scalars.
  * @param[out] n			- the number of elements to multiply.
  */
-void ep_mul_sim_lot(ep_t r, ep_t p[], const bn_t k[], int n);
+void ep_mul_sim_lot(ep_t r, const ep_t p[], const bn_t k[], int n);
 
 /**
  * Multiplies and adds the generator and a prime elliptic curve point
@@ -1170,14 +1177,14 @@ void ep_mul_sim_gen(ep_t r, const bn_t k, const ep_t q, const bn_t m);
 
 /**
  * Multiplies prime elliptic curve points by small scalars.
- * Computes R = \sum k_iP_i.
+ * Computes R = \Sum_i=0..n [k_i]P_i.
  *
  * @param[out] r			- the result.
  * @param[in] p				- the points to multiply.
  * @param[in] k				- the small scalars.
- * @param[in] len			- the number of points to multiply.
+ * @param[in] n				- the number of points to multiply.
  */
-void ep_mul_sim_dig(ep_t r, const ep_t p[], const dig_t k[], int len);
+void ep_mul_sim_dig(ep_t r, const ep_t p[], const dig_t k[], int n);
 
 /**
  * Converts a point to affine coordinates.

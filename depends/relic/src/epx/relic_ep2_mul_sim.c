@@ -52,9 +52,12 @@
  * @param[in] m					- the second integer.
  * @param[in] t					- the pointer to the precomputed table.
  */
-static void ep2_mul_sim_endom(ep2_t r, ep2_t p, const bn_t k, ep2_t q, const bn_t m) {
-	int i, j, l;
-	bn_t n, u, _k[4], _m[4];
+static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
+		const bn_t m) {
+	int i, j, l, _l[4];
+	bn_t _k[4], _m[4], n, u;
+	int8_t naf0[4][RLC_FP_BITS + 1];
+	int8_t naf1[4][RLC_FP_BITS + 1];
 	ep2_t _p[4], _q[4];
 
 	bn_null(n);
@@ -65,19 +68,14 @@ static void ep2_mul_sim_endom(ep2_t r, ep2_t p, const bn_t k, ep2_t q, const bn_
 		bn_new(u);
 		for (i = 0; i < 4; i++) {
 			bn_null(_k[i]);
+			bn_new(_k[i]);
 			bn_null(_m[i]);
+			bn_new(_m[i]);
 			ep2_null(_p[i]);
 			ep2_null(_q[i]);
-			bn_new(_k[i]);
-			bn_new(_m[i]);
 			ep2_new(_p[i]);
 			ep2_new(_q[i]);
 		}
-
-		ep2_curve_get_ord(n);
-		fp_prime_get_par(u);
-		bn_rec_frb(_k, 4, k, u, n, ep_curve_is_pairf() == EP_B12);
-		bn_rec_frb(_m, 4, m, u, n, ep_curve_is_pairf() == EP_B12);
 
 		ep2_norm(_p[0], p);
 		ep2_frb(_p[1], _p[0], 1);
@@ -88,29 +86,44 @@ static void ep2_mul_sim_endom(ep2_t r, ep2_t p, const bn_t k, ep2_t q, const bn_
 		ep2_frb(_q[2], _q[1], 1);
 		ep2_frb(_q[3], _q[2], 1);
 
+		ep2_curve_get_ord(n);
+		fp_prime_get_par(u);
+		bn_mod(_k[0], k, n);
+		bn_rec_frb(_k, 4, _k[0], u, n, ep_curve_is_pairf() == EP_BN);
+		bn_mod(_m[0], m, n);
+		bn_rec_frb(_m, 4, _m[0], u, n, ep_curve_is_pairf() == EP_BN);
+
+		l = 0;
 		for (i = 0; i < 4; i++) {
+			_l[i] = RLC_FP_BITS + 1;
+			bn_rec_naf(naf0[i], &_l[i], _k[i], 2);
 			if (bn_sign(_k[i]) == RLC_NEG) {
 				ep2_neg(_p[i], _p[i]);
 			}
+			l = RLC_MAX(l, _l[i]);
+			_l[i] = RLC_FP_BITS + 1;
+			bn_rec_naf(naf1[i], &_l[i], _m[i], 2);
 			if (bn_sign(_m[i]) == RLC_NEG) {
 				ep2_neg(_q[i], _q[i]);
 			}
+			l = RLC_MAX(l, _l[i]);
 		}
-
-		l = RLC_MAX(bn_bits(_k[0]), bn_bits(_k[1]));
-		l = RLC_MAX(l, RLC_MAX(bn_bits(_k[2]), bn_bits(_k[3])));
-		l = RLC_MAX(l, RLC_MAX(bn_bits(_m[0]), bn_bits(_m[1])));
-		l = RLC_MAX(l, RLC_MAX(bn_bits(_m[2]), bn_bits(_m[3])));
 
 		ep2_set_infty(r);
 		for (i = l - 1; i >= 0; i--) {
 			ep2_dbl(r, r);
 			for (j = 0; j < 4; j++) {
-				if (bn_get_bit(_k[j], i)) {
+				if (naf0[j][i] > 0) {
 					ep2_add(r, r, _p[j]);
 				}
-				if (bn_get_bit(_m[j], i)) {
+				if (naf0[j][i] < 0) {
+					ep2_sub(r, r, _p[j]);
+				}
+				if (naf1[j][i] > 0) {
 					ep2_add(r, r, _q[j]);
+				}
+				if (naf1[j][i] < 0) {
+					ep2_sub(r, r, _q[j]);
 				}
 			}
 		}
@@ -133,6 +146,8 @@ static void ep2_mul_sim_endom(ep2_t r, ep2_t p, const bn_t k, ep2_t q, const bn_
 
 #endif /* EP_ENDOM */
 
+#if defined(EP_PLAIN) || defined(EP_SUPER)
+
 /**
  * Multiplies and adds two prime elliptic curve points simultaneously,
  * optionally choosing the first point as the generator depending on an optional
@@ -145,8 +160,8 @@ static void ep2_mul_sim_endom(ep2_t r, ep2_t p, const bn_t k, ep2_t q, const bn_
  * @param[in] m					- the second integer.
  * @param[in] t					- the pointer to the precomputed table.
  */
-static void ep2_mul_sim_plain(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m,
-		ep2_t *t) {
+static void ep2_mul_sim_plain(ep2_t r, const ep2_t p, const bn_t k,
+		const ep2_t q, const bn_t m, const ep2_t *t) {
 	int i, l, l0, l1, n0, n1, w, gen;
 	int8_t naf0[2 * RLC_FP_BITS + 1], naf1[2 * RLC_FP_BITS + 1], *_k, *_m;
 	ep2_t t0[1 << (EP_WIDTH - 2)];
@@ -184,13 +199,6 @@ static void ep2_mul_sim_plain(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m,
 		l = RLC_MAX(l0, l1);
 		_k = naf0 + l - 1;
 		_m = naf1 + l - 1;
-		for (i = l0; i < l; i++) {
-			naf0[i] = 0;
-		}
-		for (i = l1; i < l; i++) {
-			naf1[i] = 0;
-		}
-
 		if (bn_sign(k) == RLC_NEG) {
 			for (i =  0; i < l0; i++) {
 				naf0[i] = -naf0[i];
@@ -240,6 +248,8 @@ static void ep2_mul_sim_plain(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m,
 	}
 }
 
+#endif /* EP_PLAIN || EP_SUPER */
+
 #endif /* EP_SIM == INTER */
 
 /*============================================================================*/
@@ -248,7 +258,8 @@ static void ep2_mul_sim_plain(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m,
 
 #if EP_SIM == BASIC || !defined(STRIP)
 
-void ep2_mul_sim_basic(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t l) {
+void ep2_mul_sim_basic(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
+		const bn_t l) {
 	ep2_t t;
 
 	ep2_null(t);
@@ -272,15 +283,18 @@ void ep2_mul_sim_basic(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t l) {
 
 #if EP_SIM == TRICK || !defined(STRIP)
 
-void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
+void ep2_mul_sim_trick(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
+		const bn_t m) {
 	ep2_t t0[1 << (EP_WIDTH / 2)];
 	ep2_t t1[1 << (EP_WIDTH / 2)];
 	ep2_t t[1 << EP_WIDTH];
-	bn_t n;
+	bn_t n, _k, _m;
 	int l0, l1, w = EP_WIDTH / 2;
 	uint8_t w0[2 * RLC_FP_BITS], w1[2 * RLC_FP_BITS];
 
 	bn_null(n);
+	bn_null(_k);
+	bn_null(_m);
 
 	if (bn_is_zero(k) || ep2_is_infty(p)) {
 		ep2_mul(r, q, m);
@@ -293,8 +307,12 @@ void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 
 	RLC_TRY {
 		bn_new(n);
+		bn_new(_k);
+		bn_new(_m);
 
 		ep2_curve_get_ord(n);
+		bn_mod(_k, k, n);
+		bn_mod(_m, m, n);
 
 		for (int i = 0; i < (1 << w); i++) {
 			ep2_null(t0[i]);
@@ -359,6 +377,8 @@ void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 	}
 	RLC_FINALLY {
 		bn_free(n);
+		bn_free(_k);
+		bn_free(_m);
 		for (int i = 0; i < (1 << w); i++) {
 			ep2_free(t0[i]);
 			ep2_free(t1[i]);
@@ -372,7 +392,11 @@ void ep2_mul_sim_trick(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 
 #if EP_SIM == INTER || !defined(STRIP)
 
-void ep2_mul_sim_inter(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
+void ep2_mul_sim_inter(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
+		const bn_t m) {
+	int flag = 0;
+	bn_t n, _k, _m;
+
 	if (bn_is_zero(k) || ep2_is_infty(p)) {
 		ep2_mul(r, q, m);
 		return;
@@ -382,30 +406,53 @@ void ep2_mul_sim_inter(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 		return;
 	}
 
+	bn_null(n);
+	bn_null(_k);
+	bn_null(_m);
+
+	RLC_TRY {
+		bn_new(n);
+		bn_new(_k);
+		bn_new(_m);
+
+		/* Handle this here to reduce complexity of static functions. */
+		ep2_curve_get_ord(n);
+		bn_mod(_k, k, n);
+		bn_mod(_m, m, n);
+
 #if defined(EP_ENDOM)
-	if (ep_curve_is_endom()) {
-		if (ep_curve_opt_a() == RLC_ZERO) {
-			ep2_mul_sim_endom(r, p, k, q, m);
-		} else {
-			ep2_mul_sim_plain(r, p, k, q, m, NULL);
+		if (ep_curve_is_endom()) {
+			ep2_mul_sim_endom(r, p, _k, q, _m);
+			flag = 1;
 		}
-		return;
-	}
 #endif
 
-#if defined(EP_PLAIN)
-	ep2_mul_sim_plain(r, p, k, q, m, NULL);
+#if defined(EP_PLAIN) || defined(EP_SUPER)
+		if (!flag) {
+			ep2_mul_sim_plain(r, p, _k, q, _m, NULL);
+		}
 #endif
+		(void)flag;
+	} RLC_CATCH_ANY {
+		RLC_THROW(ERR_CAUGHT);
+	}
+	RLC_FINALLY {
+		bn_free(n);
+		bn_free(_k);
+		bn_free(_m);
+	}
 }
 
 #endif
 
 #if EP_SIM == JOINT || !defined(STRIP)
 
-void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
+void ep2_mul_sim_joint(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
+		const bn_t m) {
+	bn_t n, _k, _m;
 	ep2_t t[5];
 	int i, l, u_i, offset;
-	int8_t jsf[4 * (RLC_FP_BITS + 1)];
+	int8_t jsf[2 * (RLC_FP_BITS + 1)];
 
 	if (bn_is_zero(k) || ep2_is_infty(p)) {
 		ep2_mul(r, q, m);
@@ -416,19 +463,30 @@ void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 		return;
 	}
 
+	bn_null(n);
+	bn_null(_k);
+	bn_null(_m);
+
 	RLC_TRY {
+		bn_new(n);
+		bn_new(_k);
+		bn_new(_m);
 		for (i = 0; i < 5; i++) {
 			ep2_null(t[i]);
 			ep2_new(t[i]);
 		}
 
+		ep2_curve_get_ord(n);
+		bn_mod(_k, k, n);
+		bn_mod(_m, m, n);
+
 		ep2_set_infty(t[0]);
 		ep2_copy(t[1], q);
-		if (bn_sign(m) == RLC_NEG) {
+		if (bn_sign(_m) == RLC_NEG) {
 			ep2_neg(t[1], t[1]);
 		}
 		ep2_copy(t[2], p);
-		if (bn_sign(k) == RLC_NEG) {
+		if (bn_sign(_k) == RLC_NEG) {
 			ep2_neg(t[2], t[2]);
 		}
 		ep2_add(t[3], t[2], t[1]);
@@ -437,12 +495,12 @@ void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 		ep2_norm_sim(t + 3, t + 3, 2);
 #endif
 
-		l = 4 * (RLC_FP_BITS + 1);
-		bn_rec_jsf(jsf, &l, k, m);
+		l = 2 * (RLC_FP_BITS + 1);
+		bn_rec_jsf(jsf, &l, _k, _m);
 
 		ep2_set_infty(r);
 
-		offset = RLC_MAX(bn_bits(k), bn_bits(m)) + 1;
+		offset = RLC_MAX(bn_bits(_k), bn_bits(_m)) + 1;
 		for (i = l - 1; i >= 0; i--) {
 			ep2_dbl(r, r);
 			if (jsf[i] != 0 && jsf[i] == -jsf[i + offset]) {
@@ -467,6 +525,9 @@ void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 		RLC_THROW(ERR_CAUGHT);
 	}
 	RLC_FINALLY {
+		bn_free(n);
+		bn_free(_k);
+		bn_free(_m);
 		for (i = 0; i < 5; i++) {
 			ep2_free(t[i]);
 		}
@@ -475,10 +536,9 @@ void ep2_mul_sim_joint(ep2_t r, ep2_t p, bn_t k, ep2_t q, bn_t m) {
 
 #endif
 
-void ep2_mul_sim_gen(ep2_t r, bn_t k, ep2_t q, bn_t m) {
-	ep2_t gen;
-
-	ep2_null(gen);
+void ep2_mul_sim_gen(ep2_t r, const bn_t k, const ep2_t q, const bn_t m) {
+	ep2_t g;
+	bn_t n, _k, _m;
 
 	if (bn_is_zero(k)) {
 		ep2_mul(r, q, m);
@@ -489,25 +549,59 @@ void ep2_mul_sim_gen(ep2_t r, bn_t k, ep2_t q, bn_t m) {
 		return;
 	}
 
-	RLC_TRY {
-		ep2_new(gen);
+	ep2_null(g);
+	bn_null(n);
+	bn_null(_k);
+	bn_null(_m);
 
-		ep2_curve_get_gen(gen);
-#if EP_FIX == LWNAF && defined(EP_PRECO)
-		ep2_mul_sim_plain(r, gen, k, q, m, ep2_curve_get_tab());
+	RLC_TRY {
+		ep2_new(g);
+		bn_new(n);
+		bn_new(_k);
+		bn_new(_m);
+
+		ep2_curve_get_gen(g);
+		ep2_curve_get_ord(n);
+
+		bn_mod(_k, k, n);
+		bn_mod(_m, m, n);
+
+#if defined(EP_ENDOM)
+#if EP_SIM == INTER && EP_FIX == LWNAF && defined(EP_PRECO)
+		if (ep_curve_is_endom()) {
+			ep2_mul_sim_endom(r, g, _k, q, _m, ep2_curve_get_tab());
+		}
 #else
-		ep2_mul_sim(r, gen, k, q, m);
+		if (ep_curve_is_endom()) {
+			ep2_mul_sim(r, g, _k, q, _m);
+		}
+#endif
+#endif
+
+#if defined(EP_PLAIN) || defined(EP_SUPER)
+#if EP_SIM == INTER && EP_FIX == LWNAF && defined(EP_PRECO)
+		if (!ep_curve_is_endom()) {
+			ep2_mul_sim_plain(r, g, _k, q, _m, ep2_curve_get_tab());
+		}
+#else
+		if (!ep_curve_is_endom()) {
+			ep2_mul_sim(r, g, _k, q, _m);
+		}
+#endif
 #endif
 	}
 	RLC_CATCH_ANY {
 		RLC_THROW(ERR_CAUGHT);
 	}
 	RLC_FINALLY {
-		ep2_free(gen);
+		ep2_free(g);
+		bn_free(n);
+		bn_free(_k);
+		bn_free(_m);
 	}
 }
 
-void ep2_mul_sim_dig(ep2_t r, ep2_t p[], dig_t k[], int len) {
+void ep2_mul_sim_dig(ep2_t r, const ep2_t p[], const dig_t k[], int len) {
 	ep2_t t;
 	int max;
 
@@ -541,11 +635,16 @@ void ep2_mul_sim_dig(ep2_t r, ep2_t p[], dig_t k[], int len) {
 	}
 }
 
-void ep2_mul_sim_lot(ep2_t r, ep2_t p[], const bn_t k[], int n) {
+void ep2_mul_sim_lot(ep2_t r, const ep2_t p[], const bn_t k[], int n) {
 	const int len = RLC_FP_BITS + 1;
 	int i, j, m, l, _l[4];
 	bn_t _k[4], q, x;
-	int8_t *naf = RLC_ALLOCA(int8_t, 4 * n * len);
+	int8_t ptr, *naf = RLC_ALLOCA(int8_t, 4 * n * len);
+
+	if (n == 0) {
+		ep2_set_infty(r);
+		return;
+	}
 
 	bn_null(q);
 	bn_null(x);
@@ -577,7 +676,8 @@ void ep2_mul_sim_lot(ep2_t r, ep2_t p[], const bn_t k[], int n) {
 				ep2_frb(_p[4*i + 2], _p[4*i + 1], 1);
 				ep2_frb(_p[4*i + 3], _p[4*i + 2], 1);
 
-				bn_rec_frb(_k, 4, k[i], x, q, ep_curve_is_pairf() == EP_B12);
+				bn_mod(_k[0], k[i], q);
+				bn_rec_frb(_k, 4, _k[0], x, q, ep_curve_is_pairf() == EP_BN);
 				for (j = 0; j < 4; j++) {
 					_l[j] = len;
 					bn_rec_naf(&naf[(4*i + j)*len], &_l[j], _k[j], 2);
@@ -622,7 +722,6 @@ void ep2_mul_sim_lot(ep2_t r, ep2_t p[], const bn_t k[], int n) {
 	} else {
 		const int w = RLC_MAX(2, util_bits_dig(n) - 2), c = (1 << (w - 2));
 		ep2_t s, t, u, v, *_p = RLC_ALLOCA(ep2_t, 4 * c);
-		int8_t ptr;
 
 		ep2_null(s);
 		ep2_null(t);
@@ -653,10 +752,16 @@ void ep2_mul_sim_lot(ep2_t r, ep2_t p[], const bn_t k[], int n) {
 			ep2_curve_get_ord(q);
 			fp_prime_get_par(x);
 			for (i = 0; i < n; i++) {
-				bn_rec_frb(_k, 4, k[i], x, q, ep_curve_is_pairf() == EP_B12);
+				bn_mod(_k[0], k[i], q);
+				bn_rec_frb(_k, 4, _k[0], x, q, ep_curve_is_pairf() == EP_BN);
 				for (j = 0; j < 4; j++) {
 					_l[j] = len;
 					bn_rec_naf(&naf[(4*i + j)*len], &_l[j], _k[j], w);
+					if (bn_sign(_k[j]) == RLC_NEG) {
+						for (m = 0; m < _l[j]; m++) {
+							naf[(4*i + j)*len + m] = -naf[(4*i + j)*len + m];
+						}
+					}
 					l = RLC_MAX(l, _l[j]);
 				}
 			}
@@ -672,10 +777,7 @@ void ep2_mul_sim_lot(ep2_t r, ep2_t p[], const bn_t k[], int n) {
 								ptr = -ptr;
 								ep2_neg(t, t);
 							}
-							if (bn_sign(k[i]) == RLC_NEG) {
-								ep2_neg(t, t);
-							}
-							ep2_add(_p[m*c + (ptr >> 1)], _p[m*c + (ptr >> 1)], t);
+							ep2_add(_p[m*c + (ptr/2)], _p[m*c + (ptr/2)], t);
 						}
 					}
 				}
