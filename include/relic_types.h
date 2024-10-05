@@ -37,7 +37,7 @@
 
 #include "relic_conf.h"
 
-#if ARITH == GMP
+#if ARITH == GMP || ARITH == GMP_SEC
 #include <gmp.h>
 #endif
 
@@ -166,7 +166,7 @@ typedef unsigned long long ull_t;
 /*
  * Represents the unsigned integer with maximum precision.
  */
-typedef unsigned int uint_t;
+typedef unsigned long uint_t;
 
 /*============================================================================*/
 /* Macro definitions                                                          */
@@ -178,7 +178,7 @@ typedef unsigned int uint_t;
 #if ALIGN > 1
 #define rlc_align 		__attribute__ ((aligned (ALIGN)))
 #else
-#define rlc_align 		/* empty*/
+#define rlc_align 		/* empty */
 #endif
 
 /**

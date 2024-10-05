@@ -36,6 +36,7 @@
 #include "relic_core.h"
 
 #include "lzcnt.inc"
+#include "tzcnt.inc"
 
 /*============================================================================*/
 /* Public definitions                                                         */
@@ -43,14 +44,16 @@
 
 void arch_init(void) {
 	core_get()->lzcnt_ptr = (has_lzcnt_hard() ? lzcnt32_hard : lzcnt32_soft);
+	core_get()->tzcnt_ptr = (has_tzcnt_hard() ? tzcnt32_hard : tzcnt32_soft);
 }
 
 void arch_clean(void) {
 	core_get()->lzcnt_ptr = NULL;
+	core_get()->tzcnt_ptr = NULL;
 }
 
 ull_t arch_cycles(void) {
-	unsigned int hi, lo;
+	uint32_t hi, lo;
 	asm (
 		"cpuid\n\t"/*serialize*/
 		"rdtsc\n\t"/*read the clock*/
@@ -61,6 +64,10 @@ ull_t arch_cycles(void) {
 	return ((ull_t) lo) | (((ull_t) hi) << 32);
 }
 
-unsigned int arch_lzcnt(dig_t x) {
+uint_t arch_lzcnt(dig_t x) {
 	return core_get()->lzcnt_ptr((uint32_t)x) - (8 * sizeof(uint32_t) - WSIZE);
+}
+
+uint_t arch_tzcnt(dig_t x) {
+	return core_get()->tzcnt_ptr(x);
 }

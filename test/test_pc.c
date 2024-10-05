@@ -35,7 +35,7 @@
 #include "relic_test.h"
 
 static int memory1(void) {
-	err_t e;
+	err_t e = ERR_CAUGHT;
 	int code = RLC_ERR;
 	g1_t a;
 
@@ -106,6 +106,7 @@ int util1(void) {
 			TEST_ASSERT(g1_cmp(c, a) == RLC_EQ, end);
 			TEST_ASSERT(g1_cmp(a, c) == RLC_EQ, end);
 			g1_neg(b, a);
+			g1_norm(b, b);
 			g1_add(a, a, b);
 			g1_set_infty(b);
 			TEST_ASSERT(g1_cmp(a, b) == RLC_EQ, end);
@@ -579,6 +580,7 @@ static int validity1(void) {
 		TEST_CASE("blinding is consistent") {
 			g1_rand(a);
 			g1_blind(a, a);
+			g1_norm(a, a);
 			TEST_ASSERT(g1_is_valid(a), end);
 		} TEST_END;
 	}
@@ -625,7 +627,7 @@ static int hashing1(void) {
 }
 
 static int memory2(void) {
-	err_t e;
+	err_t e = ERR_CAUGHT;
 	int code = RLC_ERR;
 	g2_t a;
 
@@ -653,7 +655,7 @@ static int memory2(void) {
 int util2(void) {
 	int l, code = RLC_ERR;
 	g2_t a, b, c;
-	uint8_t bin[8 * RLC_PC_BYTES + 1];
+	uint8_t bin[16 * RLC_PC_BYTES + 1];
 
 	g2_null(a);
 	g2_null(b);
@@ -1169,6 +1171,7 @@ static int validity2(void) {
 		TEST_CASE("blinding is consistent") {
 			g2_rand(a);
 			g2_blind(a, a);
+			g2_norm(a, a);
 			TEST_ASSERT(g2_is_valid(a), end);
 		} TEST_END;
 	}
@@ -1180,8 +1183,6 @@ static int validity2(void) {
 	g2_free(a);
 	return code;
 }
-
-#if FP_PRIME != 509
 
 static int hashing2(void) {
 	int code = RLC_ERR;
@@ -1216,10 +1217,8 @@ static int hashing2(void) {
 	return code;
 }
 
-#endif
-
 static int memory(void) {
-	err_t e;
+	err_t e = ERR_CAUGHT;
 	int code = RLC_ERR;
 	gt_t a;
 
@@ -1245,9 +1244,8 @@ static int memory(void) {
 }
 
 int util(void) {
-	int l, code = RLC_ERR;
+	int code = RLC_ERR;
 	gt_t a, b, c;
-	uint8_t bin[24 * RLC_PC_BYTES];
 
 	gt_null(a);
 	gt_null(b);
@@ -1490,18 +1488,31 @@ int exponentiation(void) {
 
 		TEST_CASE("exponentiation is correct") {
 			gt_rand(a);
-			gt_rand(b);
+			bn_set_dig(d, 0);
+			gt_exp(b, a, d);
+			TEST_ASSERT(gt_is_unity(b), end);
+			bn_set_dig(d, 1);
+			gt_exp(b, a, d);
+			TEST_ASSERT(gt_cmp(a, b) == RLC_EQ, end);
 			bn_rand_mod(d, n);
+			RLC_CAT(RLC_GT_LOWER, exp)(b, a, d);
+			gt_exp(c, a, d);
+			TEST_ASSERT(gt_cmp(b, c) == RLC_EQ, end);
+			bn_rand_mod(d, n);
+			gt_exp(b, a, d);
+			gt_exp_sec(c, a, d);
+			TEST_ASSERT(gt_cmp(b, c) == RLC_EQ, end);
+			bn_neg(d, d);
+			gt_exp(b, a, d);
+			gt_exp_sec(c, a, d);
+			TEST_ASSERT(gt_cmp(b, c) == RLC_EQ, end);
+			gt_rand(b);
 			bn_rand_mod(e, n);
 			gt_exp_sim(c, a, d, b, e);
 			gt_exp(a, a, d);
 			gt_exp(b, b, e);
 			gt_mul(b, a, b);
 			TEST_ASSERT(gt_cmp(b, c) == RLC_EQ, end);
-			gt_exp_dig(b, a, 0);
-			TEST_ASSERT(gt_is_unity(b), end);
-			gt_exp_dig(b, a, 1);
-			TEST_ASSERT(gt_cmp(a, b) == RLC_EQ, end);
 			bn_rand(d, RLC_POS, RLC_DIG);
 			gt_exp(b, a, d);
 			gt_exp_dig(c, a, d->dp[0]);
@@ -1636,6 +1647,10 @@ static int pairing(void) {
 			gt_mul(e1, e1, e2);
 			pc_map_sim(e2, p, q, 2);
 			TEST_ASSERT(gt_cmp(e1, e2) == RLC_EQ, end);
+			g1_neg(p[1], p[0]);
+			g2_copy(q[1], q[0]);
+			pc_map_sim(e1, p, q, 2);
+			TEST_ASSERT(gt_cmp_dig(e1, 1) == RLC_EQ, end);
 		} TEST_END;
 	}
 	RLC_CATCH_ANY {
@@ -1746,11 +1761,9 @@ int test2(void) {
 		return RLC_ERR;
 	}
 
-#if FP_PRIME != 509
 	if (hashing2() != RLC_OK) {
 		return RLC_ERR;
 	}
-#endif
 
 	return RLC_OK;
 }

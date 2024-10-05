@@ -115,10 +115,10 @@
  * @param[out] p_len	- the number of added pad bytes.
  * @param[in] m_len		- the message length in bytes.
  * @param[in] k_len		- the key length in bytes.
- * @param[in] operation	- flag to indicate the operation type.
+ * @param[in] op		- flag to indicate the operation type.
  * @return RLC_ERR if errors occurred, RLC_OK otherwise.
  */
-static int pad_basic(bn_t m, int *p_len, int m_len, int k_len, int operation) {
+static int pad_basic(bn_t m, size_t *p_len, size_t m_len, size_t k_len, int op) {
 	uint8_t pad = 0;
 	int result = RLC_ERR;
 	bn_t t;
@@ -127,7 +127,7 @@ static int pad_basic(bn_t m, int *p_len, int m_len, int k_len, int operation) {
 		bn_null(t);
 		bn_new(t);
 
-		switch (operation) {
+		switch (op) {
 			case RSA_ENC:
 			case RSA_SIG:
 			case RSA_SIG_HASH:
@@ -214,7 +214,7 @@ static const uint8_t sh512_id[] = {
  * @param[in, out] len		- the length of the identifier.
  * @return The pointer to the hash function identifier.
  */
-static uint8_t *hash_id(int md, int *len) {
+static uint8_t *hash_id(int md, size_t *len) {
 	switch (md) {
 		case SH224:
 			*len = sizeof(sh224_id);
@@ -241,12 +241,14 @@ static uint8_t *hash_id(int md, int *len) {
  * @param[out] p_len	- the number of added pad bytes.
  * @param[in] m_len		- the message length in bytes.
  * @param[in] k_len		- the key length in bytes.
- * @param[in] operation	- flag to indicate the operation type.
+ * @param[in] op		- flag to indicate the operation type.
  * @return RLC_ERR if errors occurred, RLC_OK otherwise.
  */
-static int pad_pkcs1(bn_t m, int *p_len, int m_len, int k_len, int operation) {
+static int pad_pkcs1(bn_t m, size_t *p_len, size_t m_len, size_t k_len,
+		int operation) {
 	uint8_t *id, pad = 0;
-	int len, result = RLC_ERR;
+	size_t len = 0;
+	int result = RLC_ERR;
 	bn_t t;
 
 	bn_null(t);
@@ -419,7 +421,8 @@ static int pad_pkcs1(bn_t m, int *p_len, int m_len, int k_len, int operation) {
  * @param[in] operation	- flag to indicate the operation type.
  * @return RLC_ERR if errors occurred, RLC_OK otherwise.
  */
-static int pad_pkcs2(bn_t m, int *p_len, int m_len, int k_len, int operation) {
+static int pad_pkcs2(bn_t m, size_t *p_len, size_t m_len, size_t k_len,
+		int operation) {
 	uint8_t pad, h1[RLC_MD_LEN], h2[RLC_MD_LEN];
 	uint8_t *mask = RLC_ALLOCA(uint8_t, k_len);
 	int result = RLC_ERR;
@@ -578,7 +581,7 @@ static int pad_pkcs2(bn_t m, int *p_len, int m_len, int k_len, int operation) {
 /* Public definitions                                                         */
 /*============================================================================*/
 
-int cp_rsa_gen(rsa_t pub, rsa_t prv, int bits) {
+int cp_rsa_gen(rsa_t pub, rsa_t prv, size_t bits) {
 	bn_t t, r;
 	int result = RLC_OK;
 
@@ -666,7 +669,8 @@ int cp_rsa_gen(rsa_t pub, rsa_t prv, int bits) {
 int cp_rsa_enc(uint8_t *out, size_t *out_len, const uint8_t *in, size_t in_len,
 		const rsa_t pub) {
 	bn_t m, eb;
-	int size, pad_len, result = RLC_OK;
+	size_t size, pad_len;
+	int result = RLC_OK;
 
 	bn_null(m);
 	bn_null(eb);
@@ -724,7 +728,8 @@ int cp_rsa_enc(uint8_t *out, size_t *out_len, const uint8_t *in, size_t in_len,
 int cp_rsa_dec(uint8_t *out, size_t *out_len, const uint8_t *in, size_t in_len,
 		const rsa_t prv) {
 	bn_t m, eb;
-	int size, pad_len, result = RLC_OK;
+	size_t size, pad_len;
+	int result = RLC_OK;
 
 	bn_null(m);
 	bn_null(eb);
@@ -780,7 +785,8 @@ int cp_rsa_dec(uint8_t *out, size_t *out_len, const uint8_t *in, size_t in_len,
 int cp_rsa_sig(uint8_t *sig, size_t *sig_len, const uint8_t *msg,
 		size_t msg_len, int hash, const rsa_t prv) {
 	bn_t m, eb;
-	int pad_len, size, result = RLC_OK;
+	size_t size, pad_len;
+	int result = RLC_OK;
 	uint8_t h[RLC_MD_LEN];
 
 	if (prv == NULL || msg_len < 0) {
@@ -869,7 +875,8 @@ int cp_rsa_sig(uint8_t *sig, size_t *sig_len, const uint8_t *msg,
 int cp_rsa_ver(uint8_t *sig, size_t sig_len, const uint8_t *msg, size_t msg_len,
 		int hash, const rsa_t pub) {
 	bn_t m, eb;
-	int size, pad_len, result;
+	size_t size, pad_len;
+	int result;
 	uint8_t *h1 = RLC_ALLOCA(uint8_t, RLC_MAX(msg_len, RLC_MD_LEN) + 8);
 	uint8_t *h2 = RLC_ALLOCA(uint8_t, RLC_MAX(msg_len, RLC_MD_LEN));
 
@@ -937,7 +944,7 @@ int cp_rsa_ver(uint8_t *sig, size_t sig_len, const uint8_t *msg, size_t msg_len,
 				memset(h1, 0, RLC_MD_LEN);
 				bn_write_bin(h1, size - pad_len, eb);
 				/* Everything went ok, so signature status is changed. */
-				result = util_cmp_const(h1, h2, RLC_MD_LEN);
+				result = util_cmp_sec(h1, h2, RLC_MD_LEN);
 			} else {
 				memcpy(h1 + 8, msg, msg_len);
 				md_map(h2, h1, RLC_MD_LEN + 8);
@@ -946,7 +953,7 @@ int cp_rsa_ver(uint8_t *sig, size_t sig_len, const uint8_t *msg, size_t msg_len,
 				bn_write_bin(h1, size - pad_len, eb);
 
 				/* Everything went ok, so signature status is changed. */
-				result = util_cmp_const(h1, h2, msg_len);
+				result = util_cmp_sec(h1, h2, msg_len);
 			}
 #else
 			memset(h1, 0, RLC_MAX(msg_len, RLC_MD_LEN));
@@ -955,10 +962,10 @@ int cp_rsa_ver(uint8_t *sig, size_t sig_len, const uint8_t *msg, size_t msg_len,
 			if (!hash) {
 				md_map(h2, msg, msg_len);
 				/* Everything went ok, so signature status is changed. */
-				result = util_cmp_const(h1, h2, RLC_MD_LEN);
+				result = util_cmp_sec(h1, h2, RLC_MD_LEN);
 			} else {
 				/* Everything went ok, so signature status is changed. */
-				result = util_cmp_const(h1, msg, msg_len);
+				result = util_cmp_sec(h1, msg, msg_len);
 			}
 #endif
 			result = (result == RLC_EQ ? 1 : 0);

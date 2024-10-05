@@ -47,7 +47,7 @@
  * @param[in] b				- the second multiple precision integer.
  * @param[in] level			- the number of Karatsuba steps to apply.
  */
-static void bn_mul_karat_imp(bn_t c, const bn_t a, const bn_t b, int level) {
+static void bn_mul_karat_imp(bn_t c, const bn_t a, const bn_t b, uint_t level) {
 	bn_t a0, a1, b0, b1, a0b0, a1b1, t;
 
 	/* Compute half the digits of a or b. */
@@ -218,11 +218,9 @@ void bn_mul_comba(bn_t c, const bn_t a, const bn_t b) {
 			bn_muln_low(t->dp, a->dp, b->dp, a->used);
 		} else {
 			if (a->used > b->used) {
-				bn_muld_low(t->dp, a->dp, a->used, b->dp, b->used, 0,
-						a->used + b->used);
+				bn_muld_low(t->dp, a->dp, a->used, b->dp, b->used, 0, t->used);
 			} else {
-				bn_muld_low(t->dp, b->dp, b->used, a->dp, a->used, 0,
-						a->used + b->used);
+				bn_muld_low(t->dp, b->dp, b->used, a->dp, a->used, 0, t->used);
 			}
 		}
 

@@ -550,83 +550,648 @@ static void pairing12(void) {
 	}
 }
 
-static void pairing48(void) {
-	ep_t p;
-	fp8_t qx, qy, qz;
-	fp48_t e;
+static void pairing16(void) {
+	bn_t k, n, l;
+	ep4_t p[2], r;
+	ep_t q[2];
+	fp16_t e;
+	int j;
 
-	ep_null(p);
-	fp8_null(qx);
-	fp8_null(qy);
-	fp8_null(qz);
-	fp48_null(e);
+	bn_null(k);
+	bn_null(n);
+	bn_null(l);
+	ep4_null(r);
+	fp16_null(e);
 
-	ep_new(p);
-	fp8_new(qx);
-	fp8_new(qy);
-	fp8_new(qz);
-	fp48_new(e);
+	bn_new(k);
+	bn_new(n);
+	bn_new(l);
+	ep4_new(r);
+	fp16_new(e);
 
-	BENCH_RUN("pp_add_k48") {
-		fp8_rand(qx);
-		fp8_rand(qy);
-		fp8_rand(qz);
-		ep_rand(p);
-		BENCH_ADD(pp_add_k48(e, qx, qy, qz, qy, qx, p));
+	for (j = 0; j < 2; j++) {
+		ep4_null(p[j]);
+		ep_null(q[j]);
+		ep4_new(p[j]);
+		ep_new(q[j]);
+	}
+
+	ep4_curve_get_ord(n);
+
+	BENCH_RUN("pp_add_k16") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k16(e, r, p[0], q[0]));
 	}
 	BENCH_END;
 
 #if EP_ADD == BASIC || !defined(STRIP)
-	BENCH_RUN("pp_add_k48_basic") {
-		fp8_rand(qx);
-		fp8_rand(qy);
-		fp8_rand(qz);
-		ep_rand(p);
-		BENCH_ADD(pp_add_k48_basic(e, qx, qy, qy, qx, p));
+	BENCH_RUN("pp_add_k16_basic") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k16_basic(e, r, p[0], q[0]));
 	}
 	BENCH_END;
 #endif
 
 #if EP_ADD == PROJC || !defined(STRIP)
-	BENCH_RUN("pp_add_k48_projc") {
-		fp8_rand(qx);
-		fp8_rand(qy);
-		fp8_rand(qz);
-		ep_rand(p);
-		BENCH_ADD(pp_add_k48_projc(e, qx, qy, qz, qx, qy, p));
+
+	BENCH_RUN("pp_add_k16_projc") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k16_projc(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#if PP_EXT == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_add_k16_projc_basic") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k16_projc_basic(e, r, p[0], q[0]));
 	}
 	BENCH_END;
 #endif
 
-	BENCH_RUN("pp_dbl_k48") {
-		fp8_rand(qx);
-		fp8_rand(qy);
-		fp8_rand(qz);
-		ep_rand(p);
-		BENCH_ADD(pp_dbl_k48(e, qx, qy, qz, p));
+#if PP_EXT == LAZYR || !defined(STRIP)
+	BENCH_RUN("pp_add_k16_projc_lazyr") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k16_projc_lazyr(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#endif
+
+	BENCH_RUN("pp_dbl_k16") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k16(e, p[0], p[0], q[0]));
 	}
 	BENCH_END;
 
-	#if EP_ADD == BASIC || !defined(STRIP)
-		BENCH_RUN("pp_dbl_k48_basic") {
-			fp8_rand(qx);
-			fp8_rand(qy);
-			ep_rand(p);
-			BENCH_ADD(pp_dbl_k48_basic(e, qx, qy, p));
-		}
-		BENCH_END;
-	#endif
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k16_basic") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k16_basic(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
 
-	#if EP_ADD == PROJC || !defined(STRIP)
-		BENCH_RUN("pp_dbl_k48_projc") {
-			fp8_rand(qx);
-			fp8_rand(qy);
-			fp8_rand(qz);
-			ep_rand(p);
-			BENCH_ADD(pp_dbl_k48_projc(e, qx, qy, qz, p));
-		}
-		BENCH_END;
-	#endif
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_dbl_k16_projc") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k16_projc(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#if PP_EXT == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k16_projc_basic") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k16_projc_basic(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if PP_EXT == LAZYR || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k16_projc_lazyr") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k16_projc_lazyr(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#endif
+
+	BENCH_RUN("pp_exp_k16") {
+		fp16_rand(e);
+		BENCH_ADD(pp_exp_k16(e, e));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_k16") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_k16(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_sim_k16 (2)") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		ep4_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_k16(e, q, p, 2));
+	}
+	BENCH_END;
+
+#if PP_MAP == TATEP || !defined(STRIP)
+	BENCH_RUN("pp_map_tatep_k16") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_tatep_k16(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_tatep_sim_k16 (2)") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		ep4_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_tatep_k16(e, q, p, 2));
+	}
+	BENCH_END;
+#endif
+
+#if PP_MAP == WEILP || !defined(STRIP)
+	BENCH_RUN("pp_map_weilp_k16") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_weilp_k16(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_weilp_sim_k16 (2)") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		ep4_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_weilp_k16(e, q, p, 2));
+	}
+	BENCH_END;
+#endif
+
+#if PP_MAP == OATEP || !defined(STRIP)
+	BENCH_RUN("pp_map_oatep_k16") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_oatep_k16(e, q[0], p[0]));
+	}
+	BENCH_END;
+#endif
+
+#if PP_MAP == OATEP || !defined(STRIP)
+	BENCH_RUN("pp_map_sim_oatep_k16 (2)") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		ep4_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_oatep_k16(e, q, p, 2));
+	}
+	BENCH_END;
+#endif
+
+	bn_free(k);
+	bn_free(n);
+	bn_free(l);
+	fp16_free(e);
+	ep4_free(r);
+	for (j = 0; j < 2; j++) {
+		ep4_free(p[j]);
+		ep_free(q[j]);
+	}
+}
+
+static void pairing18(void) {
+	bn_t k, n, l;
+	ep3_t p[2], r;
+	ep_t q[2];
+	fp18_t e;
+	int j;
+
+	bn_null(k);
+	bn_null(n);
+	bn_null(l);
+	ep3_null(r);
+	fp18_null(e);
+
+	bn_new(k);
+	bn_new(n);
+	bn_new(l);
+	ep3_new(r);
+	fp18_new(e);
+
+	for (j = 0; j < 2; j++) {
+		ep3_null(p[j]);
+		ep_null(q[j]);
+		ep3_new(p[j]);
+		ep_new(q[j]);
+	}
+
+	ep3_curve_get_ord(n);
+
+	BENCH_RUN("pp_add_k18") {
+		ep3_rand(p[0]);
+		ep3_dbl(r, p[0]);
+		ep3_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k18(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_add_k18_basic") {
+		ep3_rand(p[0]);
+		ep3_dbl(r, p[0]);
+		ep3_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k18_basic(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_add_k18_projc") {
+		ep3_rand(p[0]);
+		ep3_dbl(r, p[0]);
+		ep3_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k18_projc(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#if PP_EXT == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_add_k18_projc_basic") {
+		ep3_rand(p[0]);
+		ep3_dbl(r, p[0]);
+		ep3_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k18_projc_basic(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if PP_EXT == LAZYR || !defined(STRIP)
+	BENCH_RUN("pp_add_k18_projc_lazyr") {
+		ep3_rand(p[0]);
+		ep3_dbl(r, p[0]);
+		ep3_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k18_projc_lazyr(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#endif
+
+	BENCH_RUN("pp_dbl_k18") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k18(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k18_basic") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k18_basic(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_dbl_k18_projc") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k18_projc(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#if PP_EXT == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k18_projc_basic") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k18_projc_basic(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if PP_EXT == LAZYR || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k18_projc_lazyr") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k18_projc_lazyr(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#endif
+
+	BENCH_RUN("pp_exp_k18") {
+		fp18_rand(e);
+		BENCH_ADD(pp_exp_k18(e, e));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_k18") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_k18(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_sim_k18 (2)") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		ep3_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_k18(e, q, p, 2));
+	}
+	BENCH_END;
+
+#if PP_MAP == TATEP || !defined(STRIP)
+	BENCH_RUN("pp_map_tatep_k18") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_tatep_k18(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_tatep_sim_k18 (2)") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		ep3_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_tatep_k18(e, q, p, 2));
+	}
+	BENCH_END;
+#endif
+
+#if PP_MAP == WEILP || !defined(STRIP)
+	BENCH_RUN("pp_map_weilp_k18") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_weilp_k18(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_weilp_sim_k18 (2)") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		ep3_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_weilp_k18(e, q, p, 2));
+	}
+	BENCH_END;
+#endif
+
+#if PP_MAP == OATEP || !defined(STRIP)
+	BENCH_RUN("pp_map_oatep_k18") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_oatep_k18(e, q[0], p[0]));
+	}
+	BENCH_END;
+#endif
+
+#if PP_MAP == OATEP || !defined(STRIP)
+	BENCH_RUN("pp_map_sim_oatep_k18 (2)") {
+		ep3_rand(p[0]);
+		ep_rand(q[0]);
+		ep3_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_oatep_k18(e, q, p, 2));
+	}
+	BENCH_END;
+#endif
+
+	bn_free(k);
+	bn_free(n);
+	bn_free(l);
+	fp18_free(e);
+	ep3_free(r);
+	for (j = 0; j < 2; j++) {
+		ep3_free(p[j]);
+		ep_free(q[j]);
+	}
+}
+
+static void pairing24(void) {
+	bn_t k, n, l;
+	ep4_t p[2], r;
+	ep_t q[2];
+	fp24_t e;
+	int j;
+
+	bn_null(k);
+	bn_null(n);
+	bn_null(l);
+	ep4_null(r);
+	fp24_null(e);
+
+	bn_new(k);
+	bn_new(n);
+	bn_new(l);
+	ep4_new(r);
+	fp24_new(e);
+
+	for (j = 0; j < 2; j++) {
+		ep4_null(p[j]);
+		ep_null(q[j]);
+		ep4_new(p[j]);
+		ep_new(q[j]);
+	}
+
+	ep4_curve_get_ord(n);
+
+	BENCH_RUN("pp_add_k24") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k24(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_add_k24_basic") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k24_basic(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_add_k24_projc") {
+		ep4_rand(p[0]);
+		ep4_dbl(r, p[0]);
+		ep4_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k24_projc(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#endif
+
+	BENCH_RUN("pp_dbl_k24") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k24(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k24_basic") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k24_basic(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_dbl_k24_projc") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k24_projc(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#endif
+
+	BENCH_RUN("pp_exp_k24") {
+		fp24_rand(e);
+		BENCH_ADD(pp_exp_k24(e, e));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_k24") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_k24(e, q[0], p[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("pp_map_sim_k24 (2)") {
+		ep4_rand(p[0]);
+		ep_rand(q[0]);
+		ep4_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_k24(e, q, p, 2));
+	}
+	BENCH_END;
+
+	bn_free(k);
+	bn_free(n);
+	bn_free(l);
+	fp24_free(e);
+	ep4_free(r);
+	for (j = 0; j < 2; j++) {
+		ep4_free(p[j]);
+		ep_free(q[j]);
+	}
+}
+
+static void pairing48(void) {
+	bn_t k, n, l;
+	ep8_t p[2], r;
+	ep_t q[2];
+	fp48_t e;
+	int j;
+
+	bn_null(k);
+	bn_null(n);
+	bn_null(l);
+	ep8_null(r);
+	fp48_null(e);
+
+	bn_new(k);
+	bn_new(n);
+	bn_new(l);
+	ep8_new(r);
+	fp48_new(e);
+
+	for (j = 0; j < 2; j++) {
+		ep8_null(p[j]);
+		ep_null(q[j]);
+		ep8_new(p[j]);
+		ep_new(q[j]);
+	}
+
+	ep8_curve_get_ord(n);
+
+	BENCH_RUN("pp_add_k48") {
+		ep8_rand(p[0]);
+		ep8_dbl(r, p[0]);
+		ep8_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k48(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_add_k48_basic") {
+		ep8_rand(p[0]);
+		ep8_dbl(r, p[0]);
+		ep8_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k48_basic(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_add_k48_projc") {
+		ep8_rand(p[0]);
+		ep8_dbl(r, p[0]);
+		ep8_norm(r, r);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_add_k48_projc(e, r, p[0], q[0]));
+	}
+	BENCH_END;
+
+#endif
+
+	BENCH_RUN("pp_dbl_k48") {
+		ep8_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k48(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#if EP_ADD == BASIC || !defined(STRIP)
+	BENCH_RUN("pp_dbl_k48_basic") {
+		ep8_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k48_basic(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+#endif
+
+#if EP_ADD == PROJC || !defined(STRIP)
+
+	BENCH_RUN("pp_dbl_k48_projc") {
+		ep8_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_dbl_k48_projc(e, p[0], p[0], q[0]));
+	}
+	BENCH_END;
+
+#endif
 
 	BENCH_RUN("pp_exp_k48") {
 		fp48_rand(e);
@@ -635,19 +1200,30 @@ static void pairing48(void) {
 	BENCH_END;
 
 	BENCH_RUN("pp_map_k48") {
-		fp8_rand(qx);
-		fp8_rand(qy);
-		fp8_rand(qz);
-		ep_rand(p);
-		BENCH_ADD(pp_map_k48(e, p, qx, qy));
+		ep8_rand(p[0]);
+		ep_rand(q[0]);
+		BENCH_ADD(pp_map_k48(e, q[0], p[0]));
 	}
 	BENCH_END;
 
-	ep_free(p);
-	fp8_free(qx);
-	fp8_free(qy);
-	fp8_free(qz);
+	BENCH_RUN("pp_map_sim_k48 (2)") {
+		ep8_rand(p[0]);
+		ep_rand(q[0]);
+		ep8_rand(p[1]);
+		ep_rand(q[1]);
+		BENCH_ADD(pp_map_sim_k48(e, q, p, 2));
+	}
+	BENCH_END;
+
+	bn_free(k);
+	bn_free(n);
+	bn_free(l);
 	fp48_free(e);
+	ep8_free(r);
+	for (j = 0; j < 2; j++) {
+		ep8_free(p[j]);
+		ep_free(q[j]);
+	}
 }
 
 static void pairing54(void) {
@@ -769,23 +1345,35 @@ int main(void) {
 	ep_param_print();
 	util_banner("Arithmetic:", 1);
 
-	if (ep_param_embed() == 2) {
+	if (ep_curve_embed() == 2) {
 		pairing2();
 	}
 
-	if (ep_param_embed() == 8) {
+	if (ep_curve_embed() == 8) {
 		pairing8();
 	}
 
-	if (ep_param_embed() == 12) {
+	if (ep_curve_embed() == 12) {
 		pairing12();
 	}
 
-	if (ep_param_embed() == 48) {
+	if (ep_curve_embed() == 16) {
+		pairing16();
+	}
+
+	if (ep_curve_embed() == 18) {
+		pairing18();
+	}
+
+	if (ep_curve_embed() == 48) {
+		pairing24();
+	}
+
+	if (ep_curve_embed() == 48) {
 		pairing48();
 	}
 
-	if (ep_param_embed() == 54) {
+	if (ep_curve_embed() == 54) {
 		pairing54();
 	}
 

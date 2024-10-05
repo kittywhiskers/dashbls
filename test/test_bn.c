@@ -36,7 +36,7 @@
 #include "relic_test.h"
 
 static int memory(void) {
-	err_t e;
+	err_t e = ERR_CAUGHT;
 	int code = RLC_ERR;
 	bn_t a;
 
@@ -63,7 +63,8 @@ static int memory(void) {
 }
 
 static int util(void) {
-	int bits, code = RLC_ERR;
+	uint_t bits;
+	int code = RLC_ERR;
 	char str[RLC_BN_BITS + 2];
 	dig_t digit, raw[RLC_BN_DIGS];
 	uint8_t bin[RLC_CEIL(RLC_BN_BITS, 8)];
@@ -234,7 +235,7 @@ static int util(void) {
 		} TEST_END;
 
 		TEST_CASE("reading and writing a positive number are consistent") {
-			int len = RLC_CEIL(RLC_BN_BITS, 8);
+			size_t len = RLC_CEIL(RLC_BN_BITS, 8);
 			bn_rand(a, RLC_POS, RLC_BN_BITS);
 			for (int j = 2; j <= 64; j++) {
 				bits = bn_size_str(a, j);
@@ -262,7 +263,7 @@ static int util(void) {
 		TEST_END;
 
 		TEST_CASE("reading and writing a negative number are consistent") {
-			int len = RLC_CEIL(RLC_BN_BITS, 8);
+			size_t len = RLC_CEIL(RLC_BN_BITS, 8);
 			bn_rand(a, RLC_NEG, RLC_BN_BITS);
 			for (int j = 2; j <= 64; j++) {
 				bits = bn_size_str(a, j);
@@ -1014,6 +1015,7 @@ static int reduction(void) {
 static int exponentiation(void) {
 	int code = RLC_ERR;
 	bn_t a, b, c, p;
+    bn_t t[16], u[16];
 	crt_t crt;
 
 	bn_null(a);
@@ -1022,11 +1024,20 @@ static int exponentiation(void) {
 	bn_null(p);
 	crt_null(crt);
 
+    for(int i = 0; i < 16; i++) {
+        bn_null(t[i]);
+		bn_null(u[i]);
+    }
+
 	RLC_TRY {
 		bn_new(a);
 		bn_new(b);
 		bn_new(c);
 		bn_new(p);
+        for(int i = 0; i < 16; i++) {
+            bn_new(t[i]);
+			bn_new(u[i]);
+        }
 		crt_new(crt);
 
 #if BN_MOD != PMERS
@@ -1100,6 +1111,44 @@ static int exponentiation(void) {
 		TEST_END;
 #endif
 
+        for(int i = 0; i < 16; ++i) {
+            bn_rand_mod(t[i], p);
+            bn_rand_mod(u[i], p);
+        }
+
+		TEST_CASE("simultaneous modular exponentiation is correct") {
+			bn_mxp_sim(a, t[0], u[0], t[1], u[1], p);
+			bn_mxp(c, t[0], u[0], p);
+			bn_mxp(b, t[1], u[1], p);
+			bn_mul(b, b, c);
+			bn_mod(b, b, p);
+			TEST_ASSERT(bn_cmp(a, b) == RLC_EQ, end);
+		} TEST_END;
+
+		TEST_CASE("simultaneous few modular exponentiations is correct") {
+            bn_mxp_sim_few(a, t, u, p, 8);
+            bn_mxp(b, t[0], u[0], p);
+            for(int i = 1; i < 8; ++i) {
+                bn_mxp(c, t[i], u[i], p);
+                bn_mul(b, b, c);
+                bn_mod(b, b, p);
+            }
+			TEST_ASSERT(bn_cmp(a, b) == RLC_EQ, end);
+        }
+        TEST_END;
+
+		TEST_CASE("simultaneous many modular exponentiation is correct") {
+            bn_mxp_sim_lot(a, t, u, p, 16);
+            bn_mxp(b, t[0], u[0], p);
+            for(int i = 1; i < 16; ++i) {
+                bn_mxp(c, t[i], u[i], p);
+                bn_mul(b, b, c);
+                bn_mod(b, b, p);
+            }
+			TEST_ASSERT(bn_cmp(a, b) == RLC_EQ, end);
+        }
+        TEST_END;
+
 		do {
 			bn_gen_prime(crt->p, RLC_BN_BITS / 2);
 			bn_gen_prime(crt->q, RLC_BN_BITS / 2);
@@ -1134,13 +1183,18 @@ static int exponentiation(void) {
 	bn_free(b);
 	bn_free(c);
 	bn_free(p);
+    for(size_t i = 0; i < 16; i++) {
+        bn_free(t[i]);
+		bn_free(u[i]);
+    }
 	crt_free(crt);
 	return code;
 }
 
 static int square_root(void) {
-	int bits, code = RLC_ERR;
+	size_t bits;
 	bn_t a, b, c;
+	int code = RLC_ERR;
 
 	bn_null(a);
 	bn_null(b);
@@ -1771,7 +1825,7 @@ static int prime(void) {
 		TEST_ONCE("prime with large (p-1) prime factor testing is correct") {
 			TEST_ASSERT(bn_is_prime(p) == 1, end);
 			TEST_ASSERT(bn_is_prime(q) == 1, end);
-			bn_sub_dig(p, p, 1); 	// (p-1)
+			bn_sub_dig(p, p, 1);	// (p-1)
 			bn_div(p, p, q);		// (p-1)/q
 			bn_mul(p, p, q);		// ((p-1)/q)*q
 			bn_add_dig(p, p, 1);	// ((p-1)/q)*q+1
@@ -1938,9 +1992,10 @@ static int factor(void) {
 static int recoding(void) {
 	int code = RLC_ERR;
 	bn_t a, b, c, v1[3], v2[3];
-	int w, k, l;
+	int w, k;
 	uint8_t d[RLC_BN_BITS + 1];
 	int8_t e[2 * (RLC_BN_BITS + 1)];
+	size_t l;
 
 	bn_null(a);
 	bn_null(b);
@@ -2079,7 +2134,6 @@ static int recoding(void) {
 					int8_t beta[64], gama[64];
 					int8_t tnaf[RLC_FB_BITS + 8];
 					int8_t u = (eb_curve_opt_a() == RLC_ZERO ? -1 : 1);
-					int n;
 					do {
 						bn_rand_mod(a, v1[2]);
 						l = RLC_FB_BITS + 1;
@@ -2089,7 +2143,6 @@ static int recoding(void) {
 					bn_rec_rtnaf(tnaf, &l, a, u, RLC_FB_BITS, w);
 					bn_zero(a);
 					bn_zero(b);
-					n = 0;
 					for (k = l - 1; k >= 0; k--) {
 						for (int m = 0; m < w - 1; m++) {
 							bn_copy(c, b);
@@ -2100,9 +2153,6 @@ static int recoding(void) {
 							bn_dbl(a, b);
 							bn_neg(a, a);
 							bn_copy(b, c);
-						}
-						if (tnaf[k] != 0) {
-							n++;
 						}
 						if (w == 2) {
 							if (tnaf[k] >= 0) {
@@ -2202,7 +2252,7 @@ static int recoding(void) {
 				/* Check that subscalars have the right length. */
 				TEST_ASSERT(bn_bits(b) <= 1 + (bn_bits(v2[0]) >> 1), end);
 				TEST_ASSERT(bn_bits(c) <= 1 + (bn_bits(v2[0]) >> 1), end);
-				/* Recover lambda parameter. */
+				/* Recover two candidates for the lambda parameter. */
 				if (bn_cmp_dig(v1[2], 1) == RLC_EQ) {
 					bn_gcd_ext(v1[0], v2[1], NULL, v1[1], v2[0]);
 				} else {
@@ -2219,17 +2269,39 @@ static int recoding(void) {
 				}
 				bn_mod(v1[0], v1[0], v2[0]);
 				bn_sub(v1[1], v2[0], v1[0]);
-				if (bn_cmp(v1[1], v1[0]) == RLC_LT) {
-					bn_copy(v1[0], v1[1]);
-				}
 				/* Check if b + c * lambda = k (mod n). */
-				bn_mul(c, c, v1[0]);
-				bn_add(b, b, c);
-				bn_mod(b, b, v2[0]);
-				if (bn_sign(b) == RLC_NEG) {
-					bn_add(b, b, v2[0]);
+				bn_mul(v2[1], c, v1[0]);
+				bn_add(v2[1], v2[1], b);
+				bn_mod(v2[1], v2[1], v2[0]);
+				/* Now try the other candidate. */
+				bn_mul(v2[2], c, v1[1]);
+				bn_add(v2[2], v2[2], b);
+				bn_mod(v2[2], v2[2], v2[0]);
+				TEST_ASSERT(bn_cmp(a, v2[1]) == RLC_EQ ||
+					bn_cmp(a, v2[2]) == RLC_EQ, end);
+			}
+		} TEST_END;
+
+		TEST_CASE("glv-sac recoding is correct") {
+			size_t l = RLC_BN_BITS;
+			int8_t ptr[2 * RLC_BN_BITS] = { 0 };
+			if (ep_param_set_any_endom() == RLC_OK) {
+				ep_curve_get_v1(v1);
+				ep_curve_get_v2(v2);
+				ep_curve_get_ord(b);
+				bn_rand_mod(a, b);
+				bn_rec_glv(b, c, a, b, (const bn_t *)v1, (const bn_t *)v2);
+				ep_curve_get_ord(v2[0]);
+				bn_rec_sac(ptr, &l, v1, 2, v2[0]);
+				if (bn_is_even(b)) {
+					bn_add_dig(b, b, 1);
 				}
-				TEST_ASSERT(bn_cmp(a, b) == RLC_EQ, end);
+				bn_copy(v1[0], b);
+				bn_copy(v1[1], c);
+				for (size_t i = 0; i < l; i++) {
+					TEST_ASSERT(ptr[i] == 0 || ptr[i] == 1, end);
+					TEST_ASSERT(ptr[l + i] == 0 || ptr[l + i] == 1, end);
+				}
 			}
 		} TEST_END;
 #endif /* WITH_EP && EP_ENDOM */
@@ -2364,7 +2436,6 @@ int main(void) {
 		core_clean();
 		return 1;
 	}
-
 	util_banner("All tests have passed.\n", 0);
 
 	core_clean();

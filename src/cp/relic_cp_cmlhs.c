@@ -65,13 +65,9 @@ int cp_cmlhs_gen(bn_t x[], gt_t hs[], size_t len, uint8_t prf[], size_t plen,
 		pc_map(gt, g1, g2);
 
 		rand_bytes(prf, plen);
-		if (bls) {
-			cp_bls_gen(sk, pk);
-		} else {
-			cp_ecdsa_gen(sk, g1);
-			fp_copy(pk->x[0], g1->x);
-			fp_copy(pk->y[0], g1->y);
-		}
+
+		bn_rand_mod(d, n);
+		g2_mul_gen(y, d);
 
 		/* Generate elements for n tags. */
 		for (int i = 0; i < len; i++) {
@@ -79,8 +75,15 @@ int cp_cmlhs_gen(bn_t x[], gt_t hs[], size_t len, uint8_t prf[], size_t plen,
 			gt_exp(hs[i], gt, x[i]);
 		}
 
-		bn_rand_mod(d, n);
-		g2_mul_gen(y, d);
+		if (bls) {
+			result = cp_bls_gen(sk, pk);
+		} else {
+			if (cp_ecdsa_gen(sk, g1) == RLC_OK) {
+				g2_set_g1(pk, g1);
+			} else {
+				result = RLC_ERR;
+			}
+		}
 	}
 	RLC_CATCH_ANY {
 		result = RLC_ERR;
@@ -101,8 +104,9 @@ int cp_cmlhs_sig(g1_t sig, g2_t z, g1_t a, g1_t c, g1_t r, g2_t s,
 	bn_t k, m, n;
 	g1_t t;
 	uint8_t mac[RLC_MD_LEN];
-	int len, dlen = strlen(data), result = RLC_OK;
-	uint8_t *buf = RLC_ALLOCA(uint8_t, 1 + 8 * RLC_PC_BYTES + dlen);
+	size_t len, dlen = strlen(data);
+	uint8_t *buf = RLC_ALLOCA(uint8_t, 1 + 16 * RLC_PC_BYTES + dlen);
+	int result = RLC_OK;
 
 	bn_null(k);
 	bn_null(m);
@@ -202,17 +206,18 @@ int cp_cmlhs_evl(g1_t r, g2_t s, const g1_t rs[], const g2_t ss[],
 	return result;
 }
 
-int cp_cmlhs_ver(const g1_t r, const g2_t s, const g1_t sig[], const g2_t z[],
-		const g1_t a[], const g1_t c[], const bn_t msg, const char *data,
-		const g1_t h, const int label[], const gt_t *hs[], const dig_t *f[],
-		const size_t flen[], const g2_t y[], const g2_t pk[], size_t slen,
+int cp_cmlhs_ver(const g1_t r, const g2_t s, const g1_t *sig, const g2_t *z,
+		const g1_t *a, const g1_t *c, const bn_t m, const char *data,
+		const g1_t h, const int *label, const gt_t *hs[], const dig_t *f[],
+		const size_t *flen, const g2_t *y, const g2_t *pk, size_t slen,
 		int bls) {
 	g1_t g1;
 	g2_t g2;
 	gt_t e, u, v;
 	bn_t k, n;
-	int len, dlen = strlen(data), result = 1;
-	uint8_t *buf = RLC_ALLOCA(uint8_t, 1 + 8 * RLC_PC_BYTES + dlen);
+	size_t len, dlen = strlen(data);
+	uint8_t *buf = RLC_ALLOCA(uint8_t, 1 + g2_size_bin(s, 0) + dlen);
+	int result = 1;
 
 	g1_null(g1);
 	g2_null(g2);
@@ -243,8 +248,7 @@ int cp_cmlhs_ver(const g1_t r, const g2_t s, const g1_t sig[], const g2_t z[],
 			} else {
 				fp_prime_back(k, sig[i]->x);
 				fp_prime_back(n, sig[i]->y);
-				fp_copy(g1->x, pk[i]->x[0]);
-				fp_copy(g1->y, pk[i]->y[0]);
+				g1_set_g2(g1, pk[i]);
 				fp_set_dig(g1->z, 1);
 				result &= cp_ecdsa_ver(k, n, buf, len + dlen, 0, g1);
 			}
@@ -278,7 +282,7 @@ int cp_cmlhs_ver(const g1_t r, const g2_t s, const g1_t sig[], const g2_t z[],
 		pc_map(u, g1, g2);
 		gt_mul(e, e, u);
 
-		g1_mul(g1, h, msg);
+		g1_mul(g1, h, m);
 		pc_map(v, g1, g2);
 		if (gt_cmp(e, v) != RLC_EQ) {
 			result = 0;
@@ -331,8 +335,9 @@ int cp_cmlhs_onv(const g1_t r, const g2_t s, const g1_t sig[], const g2_t z[],
 	g2_t g2;
 	gt_t e, u, v;
 	bn_t k, n;
-	int len, dlen = strlen(data), result = 1;
-	uint8_t *buf = RLC_ALLOCA(uint8_t, 1 + 8 * RLC_FP_BYTES + dlen);
+	size_t len, dlen = strlen(data);
+	uint8_t *buf = RLC_ALLOCA(uint8_t, 1 + g2_size_bin(s, 0) + dlen);
+	int result = 1;
 
 	g1_null(g1);
 	g2_null(g2);
@@ -363,9 +368,7 @@ int cp_cmlhs_onv(const g1_t r, const g2_t s, const g1_t sig[], const g2_t z[],
 			} else {
 				fp_prime_back(k, sig[i]->x);
 				fp_prime_back(n, sig[i]->y);
-				fp_copy(g1->x, pk[i]->x[0]);
-				fp_copy(g1->y, pk[i]->y[0]);
-				fp_set_dig(g1->z, 1);
+				g1_set_g2(g1, pk[i]);
 				result &= cp_ecdsa_ver(k, n, buf, len + dlen, 0, g1);
 			}
 		}

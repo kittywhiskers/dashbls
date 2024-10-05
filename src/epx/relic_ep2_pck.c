@@ -24,8 +24,8 @@
 /**
  * @file
  *
- * Implementation of point compression on prime elliptic curves over quadratic
- * extensions.
+ * Implementation of point compression on prime elliptic curves over a quadratic
+ * extension field.
  *
  * @ingroup epx
  */
@@ -39,28 +39,28 @@
 void ep2_pck(ep2_t r, const ep2_t p) {
 	bn_t halfQ, yValue;
 
-        bn_null(halfQ);
-        bn_null(yValue);
+    bn_null(halfQ);
+    bn_null(yValue);
 
 	RLC_TRY {
 		bn_new(halfQ);
 		bn_new(yValue);
 
-	        halfQ->used = RLC_FP_DIGS;
-	        dv_copy(halfQ->dp, fp_prime_get(), RLC_FP_DIGS);
-	        bn_hlv(halfQ, halfQ);
+        halfQ->used = RLC_FP_DIGS;
+        dv_copy(halfQ->dp, fp_prime_get(), RLC_FP_DIGS);
+        bn_hlv(halfQ, halfQ);
 
-	        fp_prime_back(yValue, p->y[1]);
+        fp_prime_back(yValue, p->y[1]);
 
-	        int b = bn_cmp(yValue, halfQ) == RLC_GT;
+        int b = bn_cmp(yValue, halfQ) == RLC_GT;
 
-	        fp2_copy(r->x, p->x);
-	        fp2_zero(r->y);
-	        fp_set_bit(r->y[0], 0, b);
-	        fp_zero(r->y[1]);
-	        fp_set_dig(r->z[0], 1);
-	        fp_zero(r->z[1]);
-	        r->coord = BASIC;
+        fp2_copy(r->x, p->x);
+        fp2_zero(r->y);
+        fp_set_bit(r->y[0], 0, b);
+        fp_zero(r->y[1]);
+        fp_set_dig(r->z[0], 1);
+        fp_zero(r->z[1]);
+        r->coord = BASIC;
 	} RLC_CATCH_ANY {
 		RLC_THROW(ERR_CAUGHT);
 	}
@@ -85,7 +85,7 @@ int ep2_upk(ep2_t r, const ep2_t p) {
 		bn_new(halfQ);
 		bn_new(yValue);
 
-		ep2_rhs(t, p);
+		ep2_rhs(t, p->x);
 
 		/* t0 = sqrt(x1^3 + a * x1 + b). */
 		result = fp2_srt(t, t);

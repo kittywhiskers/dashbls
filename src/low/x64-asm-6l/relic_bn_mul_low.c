@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (c) 2021 RELIC Authors
+ * Copyright (c) 2009 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -24,44 +24,37 @@
 /**
  * @file
  *
- * Implementation of the low-level inversion functions.
+ * Implementation of the multiple precision integer arithmetic multiplication
+ * functions.
  *
- * @&version $Id$
- * @ingroup fp
+ * @ingroup bn
  */
 
 #include <gmp.h>
 
-#include "relic_fp.h"
-#include "relic_fp_low.h"
-#include "relic_core.h"
+#include "relic_bn.h"
+#include "relic_bn_low.h"
+#include "relic_util.h"
 
 /*============================================================================*/
 /* Public definitions                                                         */
 /*============================================================================*/
 
-int fp_smbm_low(const dig_t *a) {
-	mpz_t n, p;
-	rlc_align dig_t t[2 * RLC_FP_DIGS], u[RLC_FP_DIGS];
-	int res;
+dig_t bn_mula_low(dig_t *c, const dig_t *a, dig_t digit, size_t size) {
+	return mpn_addmul_1(c, a, size, digit);
+}
 
-	mpz_init(n);
-	mpz_init(p);
+dig_t bn_mul1_low(dig_t *c, const dig_t *a, dig_t digit, size_t size) {
+	return mpn_mul_1(c, a, size, digit);
+}
 
-#if FP_RDC == MONTY
-	dv_zero(t + RLC_FP_DIGS, RLC_FP_DIGS);
-	dv_copy(t, a, RLC_FP_DIGS);
-	fp_rdcn_low(u, t);
-#else
-	fp_copy(u, a);
-#endif
+void bn_muln_low(dig_t *c, const dig_t *a, const dig_t *b, size_t size) {
+	mpn_mul_n(c, a, b, size);
+}
 
-	mpz_import(n, RLC_FP_DIGS, -1, sizeof(dig_t), 0, 0, u);
-	mpz_import(p, RLC_FP_DIGS, -1, sizeof(dig_t), 0, 0, fp_prime_get());
-
-	res = mpz_jacobi(n, p);
-
-	mpz_clear(n);
-	mpz_clear(p);
-	return res;
+void bn_muld_low(dig_t *c, const dig_t *a, size_t sa, const dig_t *b, size_t sb,
+		uint_t low, uint_t high) {
+	(void)low;
+	(void)high;
+	mpn_mul(c, a, sa, b, sb);
 }

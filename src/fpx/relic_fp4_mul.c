@@ -170,12 +170,20 @@ void fp4_mul_frb(fp4_t c, const fp4_t a, int i, int j) {
 		fp_copy(t[1], core_get()->fp4_p1[1]);
 
 	    if (i == 1) {
+			fp4_copy(c, a);
 			for (int k = 0; k < j; k++) {
-	        	fp2_mul(c[0], a[0], t);
-				fp2_mul(c[1], a[1], t);
+	        	fp2_mul(c[0], c[0], t);
+				fp2_mul(c[1], c[1], t);
+				if (ep_curve_is_pairf() == EP_FM16) {
+					/* TODO: fix this ugly hack. */
+					fp4_mul_art(c, c);
+				}
 				/* If constant in base field, then second component is zero. */
 				if (core_get()->frb4 == 1) {
 					fp4_mul_art(c, c);
+					if (fp_prime_get_mod18() % 3 == 2) {
+						fp4_mul_art(c, c);
+					}
 				}
 			}
 	    } else {
@@ -186,4 +194,9 @@ void fp4_mul_frb(fp4_t c, const fp4_t a, int i, int j) {
 	} RLC_FINALLY {
 		fp2_free(t);
 	}
+}
+
+void fp4_mul_dig(fp4_t c, const fp4_t a, dig_t b) {
+	fp2_mul_dig(c[0], a[0], b);
+	fp2_mul_dig(c[1], a[1], b);
 }

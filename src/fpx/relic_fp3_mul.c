@@ -149,7 +149,7 @@ void fp3_mul_integ(fp3_t c, const fp3_t a, const fp3_t b) {
 
 #endif
 
-void fp3_mul_nor(fp3_t c, const fp3_t a) {
+void fp3_mul_art(fp3_t c, const fp3_t a) {
 	fp_t t;
 
 	fp_null(t);
@@ -177,35 +177,131 @@ void fp3_mul_nor(fp3_t c, const fp3_t a) {
 	}
 }
 
+void fp3_mul_nor(fp3_t c, const fp3_t a) {
+	fp3_t t, u;
+
+	fp3_null(t);
+	fp3_null(u);
+
+	RLC_TRY {
+		fp3_new(t);
+		fp3_new(u);
+
+		fp3_mul_art(t, a);
+
+		int cnr = fp3_field_get_cnr();
+		cnr = (cnr < 0 ? -cnr : cnr);
+		switch (fp_prime_get_mod18()) {
+			case 1:
+			case 7:
+				if (cnr != 0) {
+					fp3_copy(u, a);
+					while (cnr > 1) {
+						fp3_dbl(u, u);
+						if (cnr & 1) {
+							fp3_add(u, u, a);
+						}
+						cnr = cnr >> 1;
+					}
+					if (fp3_field_get_cnr() > 0) {
+						fp3_add(t, t, u);
+					} else {
+						fp3_sub(t, t, u);
+					}
+				}
+				break;
+		}
+
+		fp3_copy(c, t);
+	}
+	RLC_CATCH_ANY {
+		RLC_THROW(ERR_CAUGHT);
+	}
+	RLC_FINALLY {
+		fp3_free(t);
+		fp3_free(u);
+	}
+}
+
 void fp3_mul_frb(fp3_t c, const fp3_t a, int i, int j) {
 	ctx_t *ctx = core_get();
+
 	fp3_copy(c, a);
-	switch (i % 3) {
-		case 0:
-			if (j % 3 == 1) {
-				fp_mul(c[1], c[1], ctx->fp3_p0[0]);
-				fp_mul(c[2], c[2], ctx->fp3_p0[1]);
-			}
-			if (j % 3 == 2) {
-				fp_mul(c[1], c[1], ctx->fp3_p0[1]);
-				fp_mul(c[2], c[2], ctx->fp3_p0[0]);
-			}
-			break;
-		case 1:
-			fp_mul(c[0], c[0], ctx->fp3_p1[j - 1]);
-			fp_mul(c[1], c[1], ctx->fp3_p1[j - 1]);
-			fp_mul(c[2], c[2], ctx->fp3_p1[j - 1]);
-			for (int k = 0; k < (j * ctx->frb3[0]) % 3; k++) {
-				fp3_mul_nor(c, c);
-			}
-			break;
-		case 2:
-			fp_mul(c[0], c[0], ctx->fp3_p2[j - 1]);
-			fp_mul(c[1], c[1], ctx->fp3_p2[j - 1]);
-			fp_mul(c[2], c[2], ctx->fp3_p2[j - 1]);
-			for (int k = 0; k < ctx->frb3[j]; k++) {
-				fp3_mul_nor(c, c);
-			}
-			break;
+	if (i % 3 == 0) {
+		if (j % 3 == 1) {
+			fp_mul(c[1], c[1], ctx->fp3_p0[0]);
+			fp_mul(c[2], c[2], ctx->fp3_p0[1]);
+		}
+		if (j % 3 == 2) {
+			fp_mul(c[1], c[1], ctx->fp3_p0[1]);
+			fp_mul(c[2], c[2], ctx->fp3_p0[0]);
+		}
 	}
+
+	if (fp3_field_get_cnr() == 0) {
+		switch (i % 3) {
+			case 1:
+				fp_mul(c[0], c[0], ctx->fp3_p1[j - 1][0]);
+				fp_mul(c[1], c[1], ctx->fp3_p1[j - 1][0]);
+				fp_mul(c[2], c[2], ctx->fp3_p1[j - 1][0]);
+				for (int k = 0; k < (j * ctx->frb3[0]) % 3; k++) {
+					fp3_mul_nor(c, c);
+				}
+				break;
+			case 2:
+				fp_mul(c[0], c[0], ctx->fp3_p2[j - 1][0]);
+				fp_mul(c[1], c[1], ctx->fp3_p2[j - 1][0]);
+				fp_mul(c[2], c[2], ctx->fp3_p2[j - 1][0]);
+				for (int k = 0; k < ctx->frb3[j]; k++) {
+					fp3_mul_nor(c, c);
+				}
+				break;
+		}
+	} else {
+#if ALLOC == AUTO
+		switch (i) {
+			case 1:
+				fp3_mul(c, c, ctx->fp3_p1[j - 1]);
+				break;
+			case 2:
+				fp3_mul(c, c, ctx->fp3_p2[j - 1]);
+				break;
+		}
+#else
+		fp3_t t;
+
+		fp3_null(t);
+
+		RLC_TRY {
+			fp3_new(t);
+
+			switch (i) {
+				case 1:
+					fp_copy(t[0], ctx->fp3_p1[j - 1][0]);
+					fp_copy(t[1], ctx->fp3_p1[j - 1][1]);
+					fp_copy(t[2], ctx->fp3_p1[j - 1][2]);
+					fp3_mul(c, c, t);
+					break;
+				case 2:
+					fp_copy(t[0], ctx->fp3_p2[j - 1][0]);
+					fp_copy(t[1], ctx->fp3_p2[j - 1][1]);
+					fp_copy(t[2], ctx->fp3_p2[j - 1][2]);
+					fp3_mul(c, c, t);
+					break;
+			}
+		}
+		RLC_CATCH_ANY {
+			RLC_THROW(ERR_CAUGHT);
+		}
+		RLC_FINALLY {
+			fp3_free(t);
+		}
+#endif
+	}
+}
+
+void fp3_mul_dig(fp3_t c, const fp3_t a, dig_t b) {
+	fp_mul_dig(c[0], a[0], b);
+	fp_mul_dig(c[1], a[1], b);
+	fp_mul_dig(c[2], a[2], b);
 }

@@ -36,6 +36,7 @@
 #include "relic_core.h"
 
 #include "lzcnt.inc"
+#include "tzcnt.inc"
 
 /**
  * Renames the inline assembly macro to a prettier name.
@@ -51,6 +52,8 @@ void arch_init(void) {
 	if (ctx != NULL) {
 		core_get()->lzcnt_ptr =
 			(has_lzcnt_hard() ? lzcnt64_hard : lzcnt64_soft);
+		core_get()->tzcnt_ptr =
+			(has_tzcnt_hard() ? tzcnt64_hard : tzcnt64_soft);
 	}
 }
 
@@ -58,13 +61,14 @@ void arch_clean(void) {
 	ctx_t *ctx = core_get();
 	if (ctx != NULL) {
 		core_get()->lzcnt_ptr = NULL;
+		core_get()->tzcnt_ptr = NULL;
 	}
 }
 
 #if TIMER == CYCLE
 
 ull_t arch_cycles(void) {
-	unsigned int hi, lo;
+	uint32_t hi, lo;
 	asm (
 		"cpuid\n\t"/*serialize*/
 		"rdtsc\n\t"/*read the clock*/
@@ -78,7 +82,7 @@ ull_t arch_cycles(void) {
 #elif TIMER == PERF
 
 ull_t arch_cycles(void) {
-	unsigned int seq;
+	uint_t seq;
 	ull_t index, offset, result = 0;
 	if (core_get()->perf_buf != NULL) {
 		do {
@@ -100,6 +104,10 @@ ull_t arch_cycles(void) {
 }
 #endif
 
-unsigned int arch_lzcnt(dig_t x) {
+uint_t arch_lzcnt(dig_t x) {
 	return core_get()->lzcnt_ptr((ull_t)x) - (8 * sizeof(ull_t) - WSIZE);
+}
+
+uint_t arch_tzcnt(dig_t x) {
+	return core_get()->tzcnt_ptr(x);
 }
