@@ -47,7 +47,9 @@ RELIC_H = \
 	depends/relic/include/low/relic_fp_low.h \
 	depends/relic/include/low/relic_fpx_low.h \
 	depends/relic/src/arch/lzcnt.inc \
-	depends/relic/src/tmpl/relic_tmpl_map.h
+	depends/relic/src/tmpl/relic_ep_add_tmpl.h \
+	depends/relic/src/tmpl/relic_ep_dbl_tmpl.h \
+	depends/relic/src/tmpl/relic_ep_map_tmpl.h
 
 RELIC_SOURCES = \
 	depends/relic/src/relic_err.c \
@@ -68,6 +70,7 @@ BN_SOURCES = \
 	depends/relic/src/bn/relic_bn_mod.c \
 	depends/relic/src/bn/relic_bn_mul.c \
 	depends/relic/src/bn/relic_bn_mxp.c \
+	depends/relic/src/bn/relic_bn_mxp_sim.c \
 	depends/relic/src/bn/relic_bn_prime.c \
 	depends/relic/src/bn/relic_bn_rec.c \
 	depends/relic/src/bn/relic_bn_shift.c \
@@ -79,6 +82,7 @@ BN_SOURCES = \
 FP_SOURCES = \
 	depends/relic/src/fp/relic_fp_add.c \
 	depends/relic/src/fp/relic_fp_cmp.c \
+	depends/relic/src/fp/relic_fp_crt.c \
 	depends/relic/src/fp/relic_fp_exp.c \
 	depends/relic/src/fp/relic_fp_inv.c \
 	depends/relic/src/fp/relic_fp_mul.c \
@@ -106,6 +110,8 @@ FPX_SOURCES = \
 	depends/relic/src/fpx/relic_fp9_sqr.c \
 	depends/relic/src/fpx/relic_fp12_mul.c \
 	depends/relic/src/fpx/relic_fp12_sqr.c \
+	depends/relic/src/fpx/relic_fp16_mul.c \
+	depends/relic/src/fpx/relic_fp16_sqr.c \
 	depends/relic/src/fpx/relic_fp18_mul.c \
 	depends/relic/src/fpx/relic_fp18_sqr.c \
 	depends/relic/src/fpx/relic_fp24_mul.c \
@@ -150,6 +156,7 @@ EP_SOURCES = \
 	depends/relic/src/ep/relic_ep_dbl.c \
 	depends/relic/src/ep/relic_ep_map.c \
 	depends/relic/src/ep/relic_ep_mul.c \
+	depends/relic/src/ep/relic_ep_mul_cof.c \
 	depends/relic/src/ep/relic_ep_mul_fix.c \
 	depends/relic/src/ep/relic_ep_mul_sim.c \
 	depends/relic/src/ep/relic_ep_neg.c \
@@ -174,6 +181,19 @@ EPX_SOURCES = \
 	depends/relic/src/epx/relic_ep2_norm.c \
 	depends/relic/src/epx/relic_ep2_pck.c \
 	depends/relic/src/epx/relic_ep2_util.c \
+	depends/relic/src/epx/relic_ep3_add.c \
+	depends/relic/src/epx/relic_ep3_cmp.c \
+	depends/relic/src/epx/relic_ep3_curve.c \
+	depends/relic/src/epx/relic_ep3_dbl.c \
+	depends/relic/src/epx/relic_ep3_frb.c \
+	depends/relic/src/epx/relic_ep3_map.c \
+	depends/relic/src/epx/relic_ep3_mul.c \
+	depends/relic/src/epx/relic_ep3_mul_cof.c \
+	depends/relic/src/epx/relic_ep3_mul_fix.c \
+	depends/relic/src/epx/relic_ep3_mul_sim.c \
+	depends/relic/src/epx/relic_ep3_neg.c \
+	depends/relic/src/epx/relic_ep3_norm.c \
+	depends/relic/src/epx/relic_ep3_util.c \
 	depends/relic/src/epx/relic_ep4_add.c \
 	depends/relic/src/epx/relic_ep4_cmp.c \
 	depends/relic/src/epx/relic_ep4_curve.c \
@@ -186,7 +206,20 @@ EPX_SOURCES = \
 	depends/relic/src/epx/relic_ep4_mul_sim.c \
 	depends/relic/src/epx/relic_ep4_neg.c \
 	depends/relic/src/epx/relic_ep4_norm.c \
-	depends/relic/src/epx/relic_ep4_util.c
+	depends/relic/src/epx/relic_ep4_util.c \
+	depends/relic/src/epx/relic_ep8_add.c \
+	depends/relic/src/epx/relic_ep8_cmp.c \
+	depends/relic/src/epx/relic_ep8_curve.c \
+	depends/relic/src/epx/relic_ep8_dbl.c \
+	depends/relic/src/epx/relic_ep8_frb.c \
+	depends/relic/src/epx/relic_ep8_map.c \
+	depends/relic/src/epx/relic_ep8_mul.c \
+	depends/relic/src/epx/relic_ep8_mul_cof.c \
+	depends/relic/src/epx/relic_ep8_mul_fix.c \
+	depends/relic/src/epx/relic_ep8_mul_sim.c \
+	depends/relic/src/epx/relic_ep8_neg.c \
+	depends/relic/src/epx/relic_ep8_norm.c \
+	depends/relic/src/epx/relic_ep8_util.c
 
 EB_SOURCES = \
 	depends/relic/src/eb/relic_eb_add.c \
@@ -221,28 +254,40 @@ ED_SOURCES = \
 	depends/relic/src/ed/relic_ed_util.c
 
 PP_SOURCES = \
+	depends/relic/src/pp/relic_pp_add_k1.c \
 	depends/relic/src/pp/relic_pp_add_k2.c \
 	depends/relic/src/pp/relic_pp_add_k8.c \
 	depends/relic/src/pp/relic_pp_add_k12.c \
+	depends/relic/src/pp/relic_pp_add_k16.c \
+	depends/relic/src/pp/relic_pp_add_k18.c \
 	depends/relic/src/pp/relic_pp_add_k24.c \
 	depends/relic/src/pp/relic_pp_add_k48.c \
 	depends/relic/src/pp/relic_pp_add_k54.c \
+	depends/relic/src/pp/relic_pp_dbl_k1.c \
 	depends/relic/src/pp/relic_pp_dbl_k2.c \
 	depends/relic/src/pp/relic_pp_dbl_k8.c \
 	depends/relic/src/pp/relic_pp_dbl_k12.c \
+	depends/relic/src/pp/relic_pp_dbl_k16.c \
+	depends/relic/src/pp/relic_pp_dbl_k18.c \
 	depends/relic/src/pp/relic_pp_dbl_k24.c \
 	depends/relic/src/pp/relic_pp_dbl_k48.c \
 	depends/relic/src/pp/relic_pp_dbl_k54.c \
+	depends/relic/src/pp/relic_pp_exp_k1.c \
 	depends/relic/src/pp/relic_pp_exp_k2.c \
 	depends/relic/src/pp/relic_pp_exp_k8.c \
 	depends/relic/src/pp/relic_pp_exp_k12.c \
+	depends/relic/src/pp/relic_pp_exp_k16.c \
+	depends/relic/src/pp/relic_pp_exp_k18.c \
 	depends/relic/src/pp/relic_pp_exp_k24.c \
 	depends/relic/src/pp/relic_pp_exp_k48.c \
 	depends/relic/src/pp/relic_pp_exp_k54.c \
 	depends/relic/src/pp/relic_pp_map.c \
+	depends/relic/src/pp/relic_pp_map_k1.c \
 	depends/relic/src/pp/relic_pp_map_k2.c \
 	depends/relic/src/pp/relic_pp_map_k8.c \
 	depends/relic/src/pp/relic_pp_map_k12.c \
+	depends/relic/src/pp/relic_pp_map_k16.c \
+	depends/relic/src/pp/relic_pp_map_k18.c \
 	depends/relic/src/pp/relic_pp_map_k24.c \
 	depends/relic/src/pp/relic_pp_map_k48.c \
 	depends/relic/src/pp/relic_pp_map_k54.c \
@@ -260,7 +305,6 @@ MD_SOURCES = \
 	depends/relic/src/md/relic_md_blake2s.c \
 	depends/relic/src/md/relic_md_hmac.c \
 	depends/relic/src/md/relic_md_kdf.c \
-	depends/relic/src/md/relic_md_mgf.c \
 	depends/relic/src/md/relic_md_sha224.c \
 	depends/relic/src/md/relic_md_sha256.c \
 	depends/relic/src/md/relic_md_sha384.c \
@@ -299,8 +343,7 @@ RELIC_SOURCES += $(BN_SOURCES) \
 	depends/relic/src/low/easy/relic_bn_mod_low.c \
 	depends/relic/src/low/easy/relic_bn_mul_low.c \
 	depends/relic/src/low/easy/relic_bn_shift_low.c \
-	depends/relic/src/low/easy/relic_bn_sqr_low.c \
-	depends/relic/src/low/easy/relic_fp_smb_low.c
+	depends/relic/src/low/easy/relic_bn_sqr_low.c
 endif
 
 if WITH_FP
@@ -310,6 +353,7 @@ RELIC_SOURCES += $(FP_SOURCES) \
 	depends/relic/src/low/easy/relic_fp_mul_low.c   \
 	depends/relic/src/low/easy/relic_fp_rdc_low.c   \
 	depends/relic/src/low/easy/relic_fp_shift_low.c \
+	depends/relic/src/low/easy/relic_fp_smb_low.c   \
 	depends/relic/src/low/easy/relic_fp_sqr_low.c
 endif
 
@@ -354,6 +398,7 @@ RELIC_SOURCES += $(FP_SOURCES) \
 	depends/relic/src/low/gmp/relic_fp_mul_low.c   \
 	depends/relic/src/low/gmp/relic_fp_rdc_low.c   \
 	depends/relic/src/low/gmp/relic_fp_shift_low.c \
+	depends/relic/src/low/gmp/relic_fp_smb_low.c   \
 	depends/relic/src/low/gmp/relic_fp_sqr_low.c
 endif
 

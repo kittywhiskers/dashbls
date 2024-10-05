@@ -752,6 +752,9 @@ AC_DEFINE(MD_MAP, SH256, Chosen hash function.)
 AC_DEFINE(CP_CRT,, Support for faster CRT-based exponentiation in factoring-based cryptosystems.)
 AC_DEFINE(CP_RSAPD, PKCS2, Chosen RSA padding method.)
 
+AC_DEFINE(RLC_DEPTH, 5, Width of precomputation table for fixed base exponentiation methods.)
+AC_DEFINE(RLC_WIDTH, 4, Width of window processing for general exponentiation methods.)
+
 AC_DEFINE(ALLOC, AUTO, Chosen memory allocation policy.)
 AC_DEFINE(RAND, HASHD, Chosen random generator.)
 AC_DEFINE(MULTI, PTHREAD, Chosen multithreading API.)
