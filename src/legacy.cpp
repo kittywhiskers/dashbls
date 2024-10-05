@@ -248,10 +248,10 @@ static void ep2_sw_encode(ep2_t p, fp2_t t) {
     // if x1 has no y, try x2. if x2 has no y, try x3
     fp2_copy(p->x, x1);
 
-    ep2_rhs(rhs, p);
+    ep2_rhs(rhs, p->x);
     int Xx1 = fp2_srt(p->y, rhs) ? 1 : -1;
     fp2_copy(p->x, x2);
-    ep2_rhs(rhs, p);
+    ep2_rhs(rhs, p->x);
     int Xx2 = fp2_srt(p->y, rhs) ? 1 : -1;
 
     // This formula computes which index to use, in constant time
@@ -261,15 +261,15 @@ static void ep2_sw_encode(ep2_t p, fp2_t t) {
 
     if (index == 0) {
         fp2_copy(p->x, x1);
-        ep2_rhs(rhs, p);
+        ep2_rhs(rhs, p->x);
         fp2_srt(p->y, rhs);
     } else if (index == 1) {
         fp2_copy(p->x, x2);
-        ep2_rhs(rhs, p);
+        ep2_rhs(rhs, p->x);
         fp2_srt(p->y, rhs);
     } else if (index == 2) {
         fp2_copy(p->x, x3);
-        ep2_rhs(rhs, p);
+        ep2_rhs(rhs, p->x);
         fp2_srt(p->y, rhs);
     }
 

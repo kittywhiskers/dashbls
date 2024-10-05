@@ -298,7 +298,8 @@ G2Element PrivateKey::SignG2(
     if (fLegacy) {
         ep2_map_legacy(pt, msg, BLS::MESSAGE_HASH_LEN);
     } else {
-        ep2_map_dst(pt, msg, len, dst, dst_len);
+        ep2_map(pt, msg, len);
+        // ep2_map_dst(pt, msg, len, dst, dst_len);
     }
     
     g2_mul(pt, pt, keydata);

@@ -118,7 +118,8 @@ G1Element G1Element::FromMessage(Bytes const message,
                                  int dst_len)
 {
     G1Element ans;
-    ep_map_dst(ans.p, message.begin(), (int)message.size(), dst, dst_len);
+    ep_map(ans.p, message.begin(), (int)message.size());
+    // ep_map_dst(ans.p, message.begin(), (int)message.size(), dst, dst_len);
     BLS::CheckRelicErrors();
     assert(ans.IsValid());
     return ans;
@@ -333,7 +334,8 @@ G2Element G2Element::FromMessage(Bytes const message,
     if (fLegacy) {
         ep2_map_legacy(ans.q, message.begin(), BLS::MESSAGE_HASH_LEN);
     } else {
-        ep2_map_dst(ans.q, message.begin(), (int)message.size(), dst, dst_len);
+        ep2_map(ans.q, message.begin(), (int)message.size());
+        // ep2_map_dst(ans.q, message.begin(), (int)message.size(), dst, dst_len);
     }
     BLS::CheckRelicErrors();
     assert(ans.IsValid());
