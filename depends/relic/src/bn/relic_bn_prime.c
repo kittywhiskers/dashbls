@@ -378,11 +378,13 @@ int bn_is_prime_solov(const bn_t a) {
 				break;
 			}
 
-			/* t2 = (t0|a). */
-			bn_smb_jac(t2, t0, a);
-			if (bn_sign(t2) == RLC_NEG) {
-				bn_add(t2, t2, a);
+			/* Lend result here, but restore afterwards, for t2 = (t0|a). */
+			result = bn_smb_jac(t0, a);
+			bn_set_dig(t2, (result < 0 ? -result : result));
+			if (result < 0) {
+				bn_neg(t2, t2);
 			}
+			result = 1;
 			/* If t1 != t2 (mod a) return 0. */
 			bn_mod(t1, t1, a);
 			bn_mod(t2, t2, a);
@@ -523,3 +525,35 @@ void bn_gen_prime_stron(bn_t a, int bits) {
 }
 
 #endif
+
+int bn_gen_prime_factor(bn_t a, bn_t b, int abits, int bbits) {
+	bn_t t;
+	int result = RLC_OK;
+
+    if (! (bbits>abits) ) {
+		return RLC_ERR;
+    }
+
+    bn_null(t);
+
+    RLC_TRY {
+        bn_new(t);
+		bn_gen_prime(a, abits);
+        do {
+            bn_rand(t, RLC_POS, bbits - bn_bits(a));
+            do {
+                bn_mul(b, a, t);
+                bn_add_dig(b, b, 1);
+                bn_add_dig(t, t, 1);
+            } while(! bn_is_prime(b));
+        } while (bn_bits(b) != bbits);
+    }
+    RLC_CATCH_ANY {
+		result = RLC_ERR;
+    }
+    RLC_FINALLY {
+        bn_free(t);
+    }
+
+    return result;
+}
