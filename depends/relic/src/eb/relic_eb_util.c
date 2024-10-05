@@ -78,7 +78,7 @@ void eb_rand(eb_t p) {
 	}
 }
 
-void eb_rhs(fb_t rhs, const eb_t p) {
+void eb_rhs(fb_t rhs, const fb_t x) {
 	fb_t t0, t1;
 
 	fb_null(t0);
@@ -89,9 +89,9 @@ void eb_rhs(fb_t rhs, const eb_t p) {
 		fb_new(t1);
 
 		/* t0 = x1^2. */
-		fb_sqr(t0, p->x);
+		fb_sqr(t0, x);
 		/* t1 = x1^3. */
-		fb_mul(t1, t0, p->x);
+		fb_mul(t1, t0, x);
 
 		/* t1 = x1^3 + a * x1^2 + b. */
 		switch (eb_curve_opt_a()) {
@@ -171,7 +171,7 @@ int eb_on_curve(const eb_t p) {
 		eb_norm(t, p);
 
 		fb_mul(lhs, t->x, t->y);
-		eb_rhs(t->x, t);
+		eb_rhs(t->x, t->x);
 		fb_sqr(t->y, t->y);
 		fb_add(lhs, lhs, t->y);
 		r = (fb_cmp(lhs, t->x) == RLC_EQ) || eb_is_infty(p);
@@ -204,7 +204,11 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 			eb_norm_sim(t + 1, (const eb_t *)t + 1, (1 << (w - 2)) - 1);
 #endif
 		}
+#if defined(EB_MIXED)
+		eb_norm(t[0], p);
+#else
 		eb_copy(t[0], p);
+#endif
 	}
 #endif /* EB_PLAIN */
 
@@ -221,7 +225,7 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 
 		switch (w) {
 			/* Formulas from https://eprint.iacr.org/2014/664. */
-#if EB_DEPTH == 3 || EB_WIDTH ==  3
+#if RLC_DEPTH == 3 || RLC_WIDTH ==  3
 			case 3:
 				eb_frb(t[0], p);
 				if (u == 1) {
@@ -231,7 +235,7 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 				eb_copy(t[0], p);
 				break;
 #endif
-#if EB_DEPTH == 4 || EB_WIDTH ==  4
+#if RLC_DEPTH == 4 || RLC_WIDTH ==  4
 			case 4:
 				eb_frb(t[0], p);
 				eb_frb(t[1], t[0]);
@@ -244,7 +248,7 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 				eb_copy(t[0], p);
 				break;
 #endif
-#if EB_DEPTH == 5 || EB_WIDTH ==  5
+#if RLC_DEPTH == 5 || RLC_WIDTH ==  5
 			case 5:
 				eb_frb(t[0], p);
 				eb_frb(t[1], t[0]);
@@ -262,7 +266,7 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 				eb_copy(t[0], p);
 				break;
 #endif
-#if EB_DEPTH == 6 || EB_WIDTH ==  6
+#if RLC_DEPTH == 6 || RLC_WIDTH ==  6
 			case 6:
 				eb_frb(t[0], p);
 				eb_frb(t[15], t[0]);
@@ -297,7 +301,7 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 				eb_copy(t[0], p);
 				break;
 #endif
-#if EB_DEPTH == 7 || EB_WIDTH ==  7
+#if RLC_DEPTH == 7 || RLC_WIDTH ==  7
 			case 7:
 				eb_frb(t[0], p);
 				eb_frb(t[15], t[0]);
@@ -354,7 +358,7 @@ void eb_tab(eb_t *t, const eb_t p, int w) {
 				eb_copy(t[0], p);
 				break;
 #endif
-#if EB_DEPTH == 8 || EB_WIDTH ==  8
+#if RLC_DEPTH == 8 || RLC_WIDTH ==  8
 			case 8:
 				eb_frb(t[0], p);
 				eb_frb(t[57], t[0]);
@@ -485,8 +489,8 @@ void eb_print(const eb_t p) {
 	fb_print(p->z);
 }
 
-int eb_size_bin(const eb_t a, int pack) {
-	int size = 0;
+size_t eb_size_bin(const eb_t a, int pack) {
+	size_t size = 0;
 
 	if (eb_is_infty(a)) {
 		return 1;
@@ -500,7 +504,7 @@ int eb_size_bin(const eb_t a, int pack) {
 	return size;
 }
 
-void eb_read_bin(eb_t a, const uint8_t *bin, int len) {
+void eb_read_bin(eb_t a, const uint8_t *bin, size_t len) {
 	if (len == 1) {
 		if (bin[0] == 0) {
 			eb_set_infty(a);
@@ -550,7 +554,7 @@ void eb_read_bin(eb_t a, const uint8_t *bin, int len) {
 	}
 }
 
-void eb_write_bin(uint8_t *bin, int len, const eb_t a, int pack) {
+void eb_write_bin(uint8_t *bin, size_t len, const eb_t a, int pack) {
 	eb_t t;
 
 	eb_null(t);

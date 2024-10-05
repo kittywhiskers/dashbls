@@ -40,7 +40,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-static void test_bytes(uint8_t *buf, int size, void *args) {
+static void test_bytes(uint8_t *buf, size_t size, void *args) {
 	int c, l, fd = *(int *)args;
 
 	if (fd == -1) {
@@ -61,8 +61,8 @@ static void rng(void) {
 	uint8_t buffer[64];
 	int fd = open("/dev/urandom", O_RDONLY);
 
-	BENCH_RUN("rand_seed") {
-		rand_bytes(buffer, k);
+	BENCH_RUN("rand_seed (64)") {
+		rand_bytes(buffer, sizeof(buffer));
 		BENCH_ADD(rand_seed(&test_bytes, (void *)&fd));
 	} BENCH_END;
 
@@ -80,8 +80,8 @@ static void rng(void) {
 static void rng(void) {
 	uint8_t buffer[256];
 
-	BENCH_RUN("rand_seed (20)") {
-		rand_bytes(buffer, 20);
+	BENCH_RUN("rand_seed (64)") {
+		rand_bytes(buffer, 64);
 		BENCH_ADD(rand_seed(buffer, 20));
 	} BENCH_END;
 

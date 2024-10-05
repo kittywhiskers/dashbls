@@ -36,6 +36,10 @@
 #ifndef RLC_CORE_H
 #define RLC_CORE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -228,12 +232,18 @@ typedef struct _ctx_t {
 	/** Value of constant one in Montgomery form. */
 	bn_st one;
 #endif /* FP_RDC == MONTY */
-#if FP_INV == JUMPDS || !defined(STRIP)
+#if FP_INV == JMPDS || !defined(STRIP)
 	/** Value of constant for divstep-based inversion. */
 	bn_st inv;
 #endif /* FP_INV */
+	/** Square root of unity for square root extraction. */
+	bn_st srt;
+	/** Cube root of unity for square root extraction. */
+	bn_st crt;
 	/** Prime modulus modulo 8. */
 	dig_t mod8;
+	/** Prime modulus modulo 18. */
+	dig_t mod18;
 	/** Value derived from the prime used for modular reduction. */
 	dig_t u;
 	/** Quadratic non-residue. */
@@ -257,8 +267,6 @@ typedef struct _ctx_t {
 	fp_st ep_a;
 	/** The b-coefficient of the elliptic curve. */
 	fp_st ep_b;
-	/** The value 3b used in elliptic curve arithmetic. */
-	fp_st ep_b3;
 	/** The generator of the elliptic curve. */
 	ep_st ep_g;
 	/** The order of the group of points in the elliptic curve. */
@@ -268,11 +276,11 @@ typedef struct _ctx_t {
 	/** The distinguished non-square used by the mapping function */
 	fp_st ep_map_u;
 	/** Precomputed constants for hashing. */
-	fp_st ep_map_c[4];
+	fp_st ep_map_c[7];
 #ifdef EP_ENDOM
+	fp_st beta;
 #if EP_MUL == LWNAF || EP_FIX == COMBS || EP_FIX == LWNAF || EP_SIM == INTER || !defined(STRIP)
 	/** Parameters required by the GLV method. @{ */
-	fp_st beta;
 	bn_st ep_v1[3];
 	bn_st ep_v2[3];
 	/** @} */
@@ -282,8 +290,6 @@ typedef struct _ctx_t {
 	int ep_opt_a;
 	/** Optimization identifier for the b-coefficient. */
 	int ep_opt_b;
-	/** Optimization identifier for the b3 value. */
-	int ep_opt_b3;
 	/** Flag that stores if the prime curve has efficient endomorphisms. */
 	int ep_is_endom;
 	/** Flag that stores if the prime curve is supersingular. */
@@ -340,6 +346,30 @@ typedef struct _ctx_t {
 	iso2_st ep2_iso;
 #endif /* EP_CTMAP */
 	/** The generator of the elliptic curve. */
+	ep3_t ep3_g;
+	/** The 'a' coefficient of the curve. */
+	fp3_t ep3_a;
+	/** The 'b' coefficient of the curve. */
+	fp3_t ep3_b;
+	/** The order of the group of points in the elliptic curve. */
+	bn_st ep3_r;
+	/** The cofactor of the group order in the elliptic curve. */
+	bn_st ep3_h;
+	/** The constants needed for Frobenius. */
+	fp3_t ep3_frb[3];
+	/** Optimization identifier for the a-coefficient. */
+	int ep3_opt_a;
+	/** Optimization identifier for the b-coefficient. */
+	int ep3_opt_b;
+	/** Flag that stores if the prime curve is a twist. */
+	int ep3_is_twist;
+#ifdef EP_PRECO
+	/** Precomputation table for generator multiplication.*/
+	ep3_st ep3_pre[RLC_EP_TABLE];
+	/** Array of pointers to the precomputation table. */
+	ep3_st *ep3_ptr[RLC_EP_TABLE];
+#endif /* EP_PRECO */
+	/** The generator of the elliptic curve. */
 	ep4_t ep4_g;
 	/** The 'a' coefficient of the curve. */
 	fp4_t ep4_a;
@@ -360,7 +390,29 @@ typedef struct _ctx_t {
 	ep4_st ep4_pre[RLC_EP_TABLE];
 	/** Array of pointers to the precomputation table. */
 	ep4_st *ep4_ptr[RLC_EP_TABLE];
-	#endif /* EP_PRECO */
+#endif /* EP_PRECO */
+	/** The generator of the elliptic curve. */
+	ep8_t ep8_g;
+	/** The 'a' coefficient of the curve. */
+	fp8_t ep8_a;
+	/** The 'b' coefficient of the curve. */
+	fp8_t ep8_b;
+	/** The order of the group of points in the elliptic curve. */
+	bn_st ep8_r;
+	/** The cofactor of the group order in the elliptic curve. */
+	bn_st ep8_h;
+	/** Optimization identifier for the a-coefficient. */
+	int ep8_opt_a;
+	/** Optimization identifier for the b-coefficient. */
+	int ep8_opt_b;
+	/** Flag that stores if the prime curve is a twist. */
+	int ep8_is_twist;
+#ifdef EP_PRECO
+	/** Precomputation table for generator multiplication.*/
+	ep8_st ep8_pre[RLC_EP_TABLE];
+	/** Array of pointers to the precomputation table. */
+	ep8_st *ep8_ptr[RLC_EP_TABLE];
+#endif /* EP_PRECO */
 #endif /* WITH_EPX */
 
 #ifdef WITH_ED
@@ -388,19 +440,21 @@ typedef struct _ctx_t {
 #endif
 
 #if defined(WITH_FPX) || defined(WITH_PP)
-	/** Integer part of the quadratic non-residue. */
+	/** Integer part of the quadratic non-residue in the quadratic extension. */
 	dis_t qnr2;
 	/** Constants for computing Frobenius maps in higher extensions. @{ */
 	fp2_st fp2_p1[5];
-	fp2_st fp2_p2[3];
+	fp2_st fp2_p2[4];
+	int frb3[3];
+	/** Integer part of the cubic non-residue in the cubic extension. */
+	dis_t cnr3;
+	fp_st fp3_p0[2];
+	fp3_st fp3_p1[5];
+	fp3_st fp3_p2[2];
 	int frb4;
 	fp2_st fp4_p1;
-	/** @} */
-	/** Constants for computing Frobenius maps in higher extensions. @{ */
-	int frb3[3];
-	fp_st fp3_p0[2];
-	fp_st fp3_p1[5];
-	fp_st fp3_p2[2];
+	int frb8;
+	fp2_st fp8_p1;
 	/** @} */
 #endif /* WITH_PP */
 
@@ -442,9 +496,11 @@ typedef struct _ctx_t {
 
 	/** Function pointer to underlying lznct implementation. */
 #if ARCH == X86
-	unsigned int (*lzcnt_ptr)(unsigned int);
+	unsigned int (*lzcnt_ptr)(dig_t);
+	unsigned int (*tzcnt_ptr)(dig_t);
 #elif ARCH == X64 || ARCH == A64
 	unsigned int (*lzcnt_ptr)(ull_t);
+	unsigned int (*tzcnt_ptr)(ull_t);
 #endif
 } ctx_t;
 
@@ -492,6 +548,10 @@ void core_set(ctx_t *ctx);
  * @param[in] init_ptr a pointer which is passed to the initialized
  */
 void core_set_thread_initializer(void (*init)(void *init_ptr), void *init_ptr);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* !RLC_CORE_H */

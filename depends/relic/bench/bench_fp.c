@@ -69,6 +69,18 @@ static void util(void) {
 	}
 	BENCH_END;
 
+	BENCH_RUN("fp_copy_sec (0)") {
+		fp_rand(a);
+		BENCH_ADD(fp_copy_sec(b, a, 0));
+	}
+	BENCH_END;
+
+	BENCH_RUN("fp_copy_sec (1)") {
+		fp_rand(a);
+		BENCH_ADD(fp_copy_sec(b, a, 1));
+	}
+	BENCH_END;
+
 	BENCH_RUN("fp_zero") {
 		fp_rand(a);
 		BENCH_ADD(fp_zero(a));
@@ -78,6 +90,12 @@ static void util(void) {
 	BENCH_RUN("fp_is_zero") {
 		fp_rand(a);
 		BENCH_ADD(fp_is_zero(a));
+	}
+	BENCH_END;
+
+	BENCH_RUN("fp_is_even") {
+		fp_rand(a);
+		BENCH_ADD(fp_is_even(a));
 	}
 	BENCH_END;
 
@@ -565,6 +583,15 @@ static void arith(void) {
 	BENCH_END;
 #endif
 
+#if FP_SMB == BINAR || !defined(STRIP)
+	BENCH_RUN("fp_smb_binar") {
+		fp_rand(a);
+		fp_sqr(a, a);
+		BENCH_ADD(fp_smb_binar(a));
+	}
+	BENCH_END;
+#endif
+
 #if FP_SMB == DIVST || !defined(STRIP)
 	BENCH_RUN("fp_smb_divst") {
 		fp_rand(a);
@@ -626,10 +653,37 @@ static void arith(void) {
 	BENCH_END;
 #endif
 
+	BENCH_RUN("fp_exp_dig") {
+		fp_rand(a);
+		bn_rand(e, RLC_POS, RLC_DIG);
+		BENCH_ADD(fp_exp_dig(b, a, e->dp[0]));
+	}
+	BENCH_END;
+
+	BENCH_RUN("fp_is_sqr") {
+		fp_rand(a);
+		BENCH_ADD(fp_is_sqr(a));
+	}
+	BENCH_END;
+
 	BENCH_RUN("fp_srt") {
 		fp_rand(a);
 		fp_sqr(a, a);
 		BENCH_ADD(fp_srt(c, a));
+	}
+	BENCH_END;
+
+	BENCH_RUN("fp_is_cub") {
+		fp_rand(a);
+		BENCH_ADD(fp_is_cub(a));
+	}
+	BENCH_END;
+
+	BENCH_RUN("fp_crt") {
+		fp_rand(a);
+		fp_sqr(b, a);
+		fp_mul(b, b, a);
+		BENCH_ADD(fp_crt(c, a));
 	}
 	BENCH_END;
 

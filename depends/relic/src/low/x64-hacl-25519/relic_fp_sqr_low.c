@@ -1,6 +1,6 @@
 /*
  * RELIC is an Efficient LIbrary for Cryptography
- * Copyright (c) 2011 RELIC Authors
+ * Copyright (c) 2009 RELIC Authors
  *
  * This file is part of RELIC. RELIC is legal property of its developers,
  * whose names are not listed here. Please refer to the COPYRIGHT file
@@ -24,47 +24,31 @@
 /**
  * @file
  *
- * Implementation of a Mask Generation Function.
+ * Implementation of low-level prime field squaring functions.
  *
- * @ingroup md
+ * @ingroup fp
  */
 
-#include <string.h>
+#include <gmp.h>
 
-#include "relic_conf.h"
-#include "relic_core.h"
-#include "relic_util.h"
-#include "relic_md.h"
+#include "relic_fp.h"
+#include "relic_fp_low.h"
+
+/*============================================================================*/
+/* Private definitions                                                        */
+/*============================================================================*/
+
+void _fp_sqrm_low(dig_t *tmp, const dig_t *f1, dig_t *out);
 
 /*============================================================================*/
 /* Public definitions                                                         */
 /*============================================================================*/
 
-void md_mgf(uint8_t *key, int key_len, const uint8_t *in,
-		int in_len) {
-	uint32_t i, j, d;
-	uint8_t *buffer = RLC_ALLOCA(uint8_t, in_len + sizeof(uint32_t));
-	uint8_t *t = RLC_ALLOCA(uint8_t, key_len + RLC_MD_LEN);
+void fp_sqrn_low(dig_t *c, const dig_t *a) {
+	mpn_mul_n(c, a, a, RLC_FP_DIGS);
+}
 
-	if (buffer == NULL || t == NULL) {
-		RLC_FREE(buffer);
-		RLC_FREE(t);
-		RLC_THROW(ERR_NO_MEMORY);
-		return;
-	}
-
-	/* d = ceil(kLen/hLen). */
-	d = RLC_CEIL(key_len, RLC_MD_LEN);
-	memcpy(buffer, in, in_len);
-	for (i = 0; i < d; i++) {
-		j = util_conv_big(i);
-		/* c = integer_to_string(c, 4). */
-		memcpy(buffer + in_len, &j, sizeof(uint32_t));
-		/* t = t || hash(z || c). */
-		md_map(t + i * RLC_MD_LEN, buffer, in_len + sizeof(uint32_t));
-	}
-	memcpy(key, t, key_len);
-
-	RLC_FREE(buffer);
-	RLC_FREE(t);
+void fp_sqrm_low(dig_t *c, const dig_t *a) {
+	rlc_align dig_t t[2 * RLC_FP_DIGS];
+	_fp_sqrm_low(t, a, c);
 }

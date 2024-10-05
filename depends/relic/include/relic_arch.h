@@ -95,6 +95,11 @@ ull_t arch_cycles(void);
  */
 uint_t arch_lzcnt(dig_t);
 
+/**
+ * Return the number of trailing zeros in an integer.
+ */
+uint_t arch_tzcnt(dig_t);
+
 #if ARCH == AVR
 
 /**
@@ -104,7 +109,7 @@ uint_t arch_lzcnt(dig_t);
  * @param[in] src		- the pointer to the string stored on the text section.
  * @param[in] len		- the length of the string.
  */
-void arch_copy_rom(char *dest, const char *src, int len);
+void arch_copy_rom(char *dest, const char *src, size_t len);
 
 #endif
 

@@ -47,18 +47,18 @@ void arch_clean(void) {
 /* Support for MSPGCC with custom MSPsim simulator. */
 
 static volatile uint8_t TEST_TEXTOUT __asm__("0x01b0");
-static volatile unsigned int BENCH_CYCLES_0 __asm__("0x01b2");
-static volatile unsigned int BENCH_CYCLES_1 __asm__("0x01b4");
-static volatile unsigned int BENCH_CYCLES_2 __asm__("0x01b6");
-static volatile unsigned int BENCH_CYCLES_3 __asm__("0x01b8");
+static volatile uint_t BENCH_CYCLES_0 __asm__("0x01b2");
+static volatile uint_t BENCH_CYCLES_1 __asm__("0x01b4");
+static volatile uint_t BENCH_CYCLES_2 __asm__("0x01b6");
+static volatile uint_t BENCH_CYCLES_3 __asm__("0x01b8");
 
 union cycles_t {
     unsigned long long cycles;
     struct {
-        unsigned int e0;
-        unsigned int e1;
-        unsigned int e2;
-        unsigned int e3;
+        uint_t e0;
+        uint_t e1;
+        uint_t e2;
+        uint_t e3;
     } e;
 };
 
@@ -91,7 +91,7 @@ ull_t arch_cycles(void) {
 
 #endif /* TIMER = CYCLE */
 
-unsigned int arch_lzcnt() {
+uint_t arch_lzcnt() {
     static const uint8_t table[16] = {
     	0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4
     };
@@ -112,6 +112,35 @@ unsigned int arch_lzcnt() {
 	}
 	a = a >> offset;
 	if (a >> 4 == 0) {
+		return table[a & 0xF] + offset;
+	} else {
+		return table[a >> 4] + 4 + offset;
+	}
+	return 0;
+#endif
+}
+
+uint_t arch_tzcnt() {
+    static const uint8_t table[16] = {
+    	4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
+    };
+#if WSIZE == 8
+	if (a >> 4 != 0) {
+		return table[a & 0xF];
+	} else {
+		return table[a >> 4] + 4;
+	}
+	return 0;
+#elif WSIZE == 16
+	int offset;
+
+	if (a & 0xFF == 0) {
+		offset = 8;
+	} else {
+		offset = 0;
+	}
+	a = a >> offset;
+	if (a >> 4 != 0) {
 		return table[a & 0xF] + offset;
 	} else {
 		return table[a >> 4] + 4 + offset;

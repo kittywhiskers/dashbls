@@ -39,7 +39,7 @@
 #if FP_EXP == BASIC || !defined(STRIP)
 
 void fp_exp_basic(fp_t c, const fp_t a, const bn_t b) {
-	int i, l;
+	size_t l;
 	fp_t r;
 
 	fp_null(r);
@@ -56,7 +56,7 @@ void fp_exp_basic(fp_t c, const fp_t a, const bn_t b) {
 
 		fp_copy(r, a);
 
-		for (i = l - 2; i >= 0; i--) {
+		for (int i = l - 2; i >= 0; i--) {
 			fp_sqr(r, r);
 			if (bn_get_bit(b, i)) {
 				fp_mul(r, r, a);
@@ -82,9 +82,9 @@ void fp_exp_basic(fp_t c, const fp_t a, const bn_t b) {
 #if FP_EXP == SLIDE || !defined(STRIP)
 
 void fp_exp_slide(fp_t c, const fp_t a, const bn_t b) {
-	fp_t t[1 << (FP_WIDTH - 1)], r;
-	int i, j, l;
+	fp_t t[1 << (RLC_WIDTH - 1)], r;
 	uint8_t win[RLC_FP_BITS + 1];
+	size_t l;
 
 	fp_null(r);
 
@@ -95,12 +95,12 @@ void fp_exp_slide(fp_t c, const fp_t a, const bn_t b) {
 
 
 	/* Initialize table. */
-	for (i = 0; i < (1 << (FP_WIDTH - 1)); i++) {
+	for (size_t i = 0; i < (1 << (RLC_WIDTH - 1)); i++) {
 		fp_null(t[i]);
 	}
 
 	RLC_TRY {
-		for (i = 0; i < (1 << (FP_WIDTH - 1)); i ++) {
+		for (size_t i = 0; i < (1 << (RLC_WIDTH - 1)); i ++) {
 			fp_new(t[i]);
 		}
 		fp_new(r);
@@ -109,18 +109,18 @@ void fp_exp_slide(fp_t c, const fp_t a, const bn_t b) {
 		fp_sqr(r, a);
 
 		/* Create table. */
-		for (i = 1; i < 1 << (FP_WIDTH - 1); i++) {
+		for (size_t i = 1; i < 1 << (RLC_WIDTH - 1); i++) {
 			fp_mul(t[i], t[i - 1], r);
 		}
 
 		fp_set_dig(r, 1);
 		l = RLC_FP_BITS + 1;
-		bn_rec_slw(win, &l, b, FP_WIDTH);
-		for (i = 0; i < l; i++) {
+		bn_rec_slw(win, &l, b, RLC_WIDTH);
+		for (size_t i = 0; i < l; i++) {
 			if (win[i] == 0) {
 				fp_sqr(r, r);
 			} else {
-				for (j = 0; j < util_bits_dig(win[i]); j++) {
+				for (size_t j = 0; j < util_bits_dig(win[i]); j++) {
 					fp_sqr(r, r);
 				}
 				fp_mul(r, r, t[win[i] >> 1]);
@@ -137,7 +137,7 @@ void fp_exp_slide(fp_t c, const fp_t a, const bn_t b) {
 		RLC_THROW(ERR_CAUGHT);
 	}
 	RLC_FINALLY {
-		for (i = 0; i < (1 << (FP_WIDTH - 1)); i++) {
+		for (size_t i = 0; i < (1 << (RLC_WIDTH - 1)); i++) {
 			fp_free(t[i]);
 		}
 		fp_free(r);
@@ -168,10 +168,10 @@ void fp_exp_monty(fp_t c, const fp_t a, const bn_t b) {
 
 		for (int i = bn_bits(b) - 1; i >= 0; i--) {
 			int j = bn_get_bit(b, i);
-			dv_swap_cond(t[0], t[1], RLC_FP_DIGS, j ^ 1);
+			dv_swap_sec(t[0], t[1], RLC_FP_DIGS, j ^ 1);
 			fp_mul(t[0], t[0], t[1]);
 			fp_sqr(t[1], t[1]);
-			dv_swap_cond(t[0], t[1], RLC_FP_DIGS, j ^ 1);
+			dv_swap_sec(t[0], t[1], RLC_FP_DIGS, j ^ 1);
 		}
 
 		if (bn_sign(b) == RLC_NEG) {
@@ -189,3 +189,34 @@ void fp_exp_monty(fp_t c, const fp_t a, const bn_t b) {
 }
 
 #endif
+
+void fp_exp_dig(fp_t c, const fp_t a, dig_t b) {
+	fp_t t;
+
+	if (b == 0) {
+		fp_set_dig(c, 1);
+		return;
+	}
+
+	fp_null(t);
+
+	RLC_TRY {
+		fp_new(t);
+
+		fp_copy(t, a);
+		for (int i = util_bits_dig(b) - 2; i >= 0; i--) {
+			fp_sqr(t, t);
+			if (b & ((dig_t)1 << i)) {
+				fp_mul(t, t, a);
+			}
+		}
+
+		fp_copy(c, t);
+	}
+	RLC_CATCH_ANY {
+		RLC_THROW(ERR_CAUGHT);
+	}
+	RLC_FINALLY {
+		fp_free(t);
+	}
+}

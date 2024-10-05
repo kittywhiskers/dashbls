@@ -25,7 +25,7 @@
  * @file
  *
  * Implementation of simultaneous point multiplication on a prime elliptic
- * curve over a quadratic extension.
+ * curve over a quadratic extension field.
  *
  * @ingroup epx
  */
@@ -52,12 +52,11 @@
  * @param[in] m					- the second integer.
  * @param[in] t					- the pointer to the precomputed table.
  */
-static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
-		const bn_t m) {
-	int i, j, l, _l[4];
+static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k,
+		const ep2_t q, const bn_t m) {
+	size_t l, _l[4];
 	bn_t _k[4], _m[4], n, u;
-	int8_t naf0[4][RLC_FP_BITS + 1];
-	int8_t naf1[4][RLC_FP_BITS + 1];
+	int8_t naf0[4][RLC_FP_BITS + 1], naf1[4][RLC_FP_BITS + 1];
 	ep2_t _p[4], _q[4];
 
 	bn_null(n);
@@ -66,7 +65,7 @@ static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
 	RLC_TRY {
 		bn_new(n);
 		bn_new(u);
-		for (i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; i++) {
 			bn_null(_k[i]);
 			bn_new(_k[i]);
 			bn_null(_m[i]);
@@ -94,7 +93,7 @@ static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
 		bn_rec_frb(_m, 4, _m[0], u, n, ep_curve_is_pairf() == EP_BN);
 
 		l = 0;
-		for (i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; i++) {
 			_l[i] = RLC_FP_BITS + 1;
 			bn_rec_naf(naf0[i], &_l[i], _k[i], 2);
 			if (bn_sign(_k[i]) == RLC_NEG) {
@@ -110,9 +109,9 @@ static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
 		}
 
 		ep2_set_infty(r);
-		for (i = l - 1; i >= 0; i--) {
+		for (int i = l - 1; i >= 0; i--) {
 			ep2_dbl(r, r);
-			for (j = 0; j < 4; j++) {
+			for (int j = 0; j < 4; j++) {
 				if (naf0[j][i] > 0) {
 					ep2_add(r, r, _p[j]);
 				}
@@ -135,7 +134,7 @@ static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
 	} RLC_FINALLY {
 		bn_free(n);
 		bn_free(u);
-		for (i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; i++) {
 			bn_free(_k[i]);
 			bn_free(_m[i]);
 			ep2_free(_p[i]);
@@ -162,43 +161,40 @@ static void ep2_mul_sim_endom(ep2_t r, const ep2_t p, const bn_t k, ep2_t q,
  */
 static void ep2_mul_sim_plain(ep2_t r, const ep2_t p, const bn_t k,
 		const ep2_t q, const bn_t m, const ep2_t *t) {
-	int i, l, l0, l1, n0, n1, w, gen;
-	int8_t naf0[2 * RLC_FP_BITS + 1], naf1[2 * RLC_FP_BITS + 1], *_k, *_m;
-	ep2_t t0[1 << (EP_WIDTH - 2)];
-	ep2_t t1[1 << (EP_WIDTH - 2)];
+	int i, w, gen = (t == NULL ? 0 : 1);
+	int8_t n0, n1, naf0[2 * RLC_FP_BITS + 1], naf1[2 * RLC_FP_BITS + 1];
+	ep2_t t0[1 << (RLC_WIDTH - 2)], t1[1 << (RLC_WIDTH - 2)];
+	size_t l, l0, l1;
 
 	RLC_TRY {
-		gen = (t == NULL ? 0 : 1);
 		if (!gen) {
-			for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
+			for (i = 0; i < (1 << (RLC_WIDTH - 2)); i++) {
 				ep2_null(t0[i]);
 				ep2_new(t0[i]);
 			}
-			ep2_tab(t0, p, EP_WIDTH);
+			ep2_tab(t0, p, RLC_WIDTH);
 			t = (ep2_t *)t0;
 		}
 
 		/* Prepare the precomputation table. */
-		for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
+		for (i = 0; i < (1 << (RLC_WIDTH - 2)); i++) {
 			ep2_null(t1[i]);
 			ep2_new(t1[i]);
 		}
 		/* Compute the precomputation table. */
-		ep2_tab(t1, q, EP_WIDTH);
+		ep2_tab(t1, q, RLC_WIDTH);
 
 		/* Compute the w-TNAF representation of k. */
 		if (gen) {
-			w = EP_DEPTH;
+			w = RLC_DEPTH;
 		} else {
-			w = EP_WIDTH;
+			w = RLC_WIDTH;
 		}
 		l0 = l1 = 2 * RLC_FP_BITS + 1;
 		bn_rec_naf(naf0, &l0, k, w);
-		bn_rec_naf(naf1, &l1, m, EP_WIDTH);
+		bn_rec_naf(naf1, &l1, m, RLC_WIDTH);
 
 		l = RLC_MAX(l0, l1);
-		_k = naf0 + l - 1;
-		_m = naf1 + l - 1;
 		if (bn_sign(k) == RLC_NEG) {
 			for (i =  0; i < l0; i++) {
 				naf0[i] = -naf0[i];
@@ -211,11 +207,11 @@ static void ep2_mul_sim_plain(ep2_t r, const ep2_t p, const bn_t k,
 		}
 
 		ep2_set_infty(r);
-		for (i = l - 1; i >= 0; i--, _k--, _m--) {
+		for (i = l - 1; i >= 0; i--) {
 			ep2_dbl(r, r);
 
-			n0 = *_k;
-			n1 = *_m;
+			n0 = naf0[i];
+			n1 = naf1[i];
 			if (n0 > 0) {
 				ep2_add(r, r, t[n0 / 2]);
 			}
@@ -238,18 +234,17 @@ static void ep2_mul_sim_plain(ep2_t r, const ep2_t p, const bn_t k,
 	RLC_FINALLY {
 		/* Free the precomputation tables. */
 		if (!gen) {
-			for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
+			for (i = 0; i < (1 << (RLC_WIDTH - 2)); i++) {
 				ep2_free(t0[i]);
 			}
 		}
-		for (i = 0; i < (1 << (EP_WIDTH - 2)); i++) {
+		for (i = 0; i < (1 << (RLC_WIDTH - 2)); i++) {
 			ep2_free(t1[i]);
 		}
 	}
 }
 
 #endif /* EP_PLAIN || EP_SUPER */
-
 #endif /* EP_SIM == INTER */
 
 /*============================================================================*/
@@ -285,11 +280,11 @@ void ep2_mul_sim_basic(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 
 void ep2_mul_sim_trick(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 		const bn_t m) {
-	ep2_t t0[1 << (EP_WIDTH / 2)];
-	ep2_t t1[1 << (EP_WIDTH / 2)];
-	ep2_t t[1 << EP_WIDTH];
+	ep2_t t0[1 << (RLC_WIDTH / 2)];
+	ep2_t t1[1 << (RLC_WIDTH / 2)];
+	ep2_t t[1 << RLC_WIDTH];
 	bn_t n, _k, _m;
-	int l0, l1, w = EP_WIDTH / 2;
+	size_t l0, l1, w = RLC_WIDTH / 2;
 	uint8_t w0[2 * RLC_FP_BITS], w1[2 * RLC_FP_BITS];
 
 	bn_null(n);
@@ -320,7 +315,7 @@ void ep2_mul_sim_trick(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 			ep2_new(t0[i]);
 			ep2_new(t1[i]);
 		}
-		for (int i = 0; i < (1 << EP_WIDTH); i++) {
+		for (int i = 0; i < (1 << RLC_WIDTH); i++) {
 			ep2_null(t[i]);
 			ep2_new(t[i]);
 		}
@@ -350,19 +345,12 @@ void ep2_mul_sim_trick(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 		}
 
 #if defined(EP_MIXED)
-		ep2_norm_sim(t + 1, t + 1, (1 << (EP_WIDTH)) - 1);
+		ep2_norm_sim(t + 1, t + 1, (1 << (RLC_WIDTH)) - 1);
 #endif
 
 		l0 = l1 = RLC_CEIL(2 * RLC_FP_BITS, w);
 		bn_rec_win(w0, &l0, k, w);
 		bn_rec_win(w1, &l1, m, w);
-
-		for (int i = l0; i < l1; i++) {
-			w0[i] = 0;
-		}
-		for (int i = l1; i < l0; i++) {
-			w1[i] = 0;
-		}
 
 		ep2_set_infty(r);
 		for (int i = RLC_MAX(l0, l1) - 1; i >= 0; i--) {
@@ -383,7 +371,7 @@ void ep2_mul_sim_trick(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 			ep2_free(t0[i]);
 			ep2_free(t1[i]);
 		}
-		for (int i = 0; i < (1 << EP_WIDTH); i++) {
+		for (int i = 0; i < (1 << RLC_WIDTH); i++) {
 			ep2_free(t[i]);
 		}
 	}
@@ -394,9 +382,6 @@ void ep2_mul_sim_trick(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 
 void ep2_mul_sim_inter(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 		const bn_t m) {
-	int flag = 0;
-	bn_t n, _k, _m;
-
 	if (bn_is_zero(k) || ep2_is_infty(p)) {
 		ep2_mul(r, q, m);
 		return;
@@ -406,41 +391,16 @@ void ep2_mul_sim_inter(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 		return;
 	}
 
-	bn_null(n);
-	bn_null(_k);
-	bn_null(_m);
-
-	RLC_TRY {
-		bn_new(n);
-		bn_new(_k);
-		bn_new(_m);
-
-		/* Handle this here to reduce complexity of static functions. */
-		ep2_curve_get_ord(n);
-		bn_mod(_k, k, n);
-		bn_mod(_m, m, n);
-
 #if defined(EP_ENDOM)
-		if (ep_curve_is_endom()) {
-			ep2_mul_sim_endom(r, p, _k, q, _m);
-			flag = 1;
-		}
+	if (ep_curve_is_endom()) {
+		ep2_mul_sim_endom(r, p, k, q, m);
+		return;
+	}
 #endif
 
 #if defined(EP_PLAIN) || defined(EP_SUPER)
-		if (!flag) {
-			ep2_mul_sim_plain(r, p, _k, q, _m, NULL);
-		}
+	ep2_mul_sim_plain(r, p, k, q, m, NULL);
 #endif
-		(void)flag;
-	} RLC_CATCH_ANY {
-		RLC_THROW(ERR_CAUGHT);
-	}
-	RLC_FINALLY {
-		bn_free(n);
-		bn_free(_k);
-		bn_free(_m);
-	}
 }
 
 #endif
@@ -451,8 +411,9 @@ void ep2_mul_sim_joint(ep2_t r, const ep2_t p, const bn_t k, const ep2_t q,
 		const bn_t m) {
 	bn_t n, _k, _m;
 	ep2_t t[5];
-	int i, l, u_i, offset;
+	int i, u_i, offset;
 	int8_t jsf[2 * (RLC_FP_BITS + 1)];
+	size_t l;
 
 	if (bn_is_zero(k) || ep2_is_infty(p)) {
 		ep2_mul(r, q, m);
@@ -601,7 +562,7 @@ void ep2_mul_sim_gen(ep2_t r, const bn_t k, const ep2_t q, const bn_t m) {
 	}
 }
 
-void ep2_mul_sim_dig(ep2_t r, const ep2_t p[], const dig_t k[], int len) {
+void ep2_mul_sim_dig(ep2_t r, const ep2_t p[], const dig_t k[], size_t len) {
 	ep2_t t;
 	int max;
 
@@ -635,11 +596,12 @@ void ep2_mul_sim_dig(ep2_t r, const ep2_t p[], const dig_t k[], int len) {
 	}
 }
 
-void ep2_mul_sim_lot(ep2_t r, const ep2_t p[], const bn_t k[], int n) {
-	const int len = RLC_FP_BITS + 1;
-	int i, j, m, l, _l[4];
+void ep2_mul_sim_lot(ep2_t r, const ep2_t p[], const bn_t k[], size_t n) {
+	const size_t len = RLC_FP_BITS + 1;
+	int i, j, m;
 	bn_t _k[4], q, x;
 	int8_t ptr, *naf = RLC_ALLOCA(int8_t, 4 * n * len);
+	size_t l, _l[4];
 
 	if (n == 0) {
 		ep2_set_infty(r);

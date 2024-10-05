@@ -40,29 +40,51 @@ void fp_copy(fp_t c, const fp_t a) {
 	dv_copy(c, a, RLC_FP_DIGS);
 }
 
+void fp_copy_sec(fp_t c, const fp_t a, dig_t bit) {
+	dv_copy_sec(c, a, RLC_FP_DIGS, bit);
+}
+
 void fp_zero(fp_t a) {
 	dv_zero(a, RLC_FP_DIGS);
 }
 
 int fp_is_zero(const fp_t a) {
 	int i;
-	dig_t t = 0;
+	dig_t t = 0, u = 0;
 
 	for (i = 0; i < RLC_FP_DIGS; i++) {
 		t |= a[i];
 	}
 
-	return !t;
+	for (i = 0; i < RLC_FP_DIGS; i++) {
+		u |= a[i] ^ fp_prime_get()[i];
+	}
+
+	return !t || !u;
 }
 
 int fp_is_even(const fp_t a) {
-	if ((a[0] & 0x01) == 0) {
-		return 1;
+	int r;
+	bn_t t;
+
+	bn_null(t);
+
+	RLC_TRY {
+		bn_new(t);
+
+		fp_prime_back(t, a);
+		r = bn_is_even(t);
+	} RLC_CATCH_ANY {
+		RLC_THROW(ERR_CAUGHT);
 	}
-	return 0;
+	RLC_FINALLY {
+		bn_free(t);
+	}
+
+	return r;
 }
 
-int fp_get_bit(const fp_t a, int bit) {
+int fp_get_bit(const fp_t a, uint_t bit) {
 	int d;
 
 	RLC_RIP(bit, d, bit);
@@ -70,7 +92,7 @@ int fp_get_bit(const fp_t a, int bit) {
 	return (a[d] >> bit) & 1;
 }
 
-void fp_set_bit(fp_t a, int bit, int value) {
+void fp_set_bit(fp_t a, uint_t bit, int value) {
 	int d;
 	dig_t mask;
 
@@ -85,18 +107,14 @@ void fp_set_bit(fp_t a, int bit, int value) {
 	}
 }
 
-int fp_bits(const fp_t a) {
+size_t fp_bits(const fp_t a) {
 	int i = RLC_FP_DIGS - 1;
 
-	while (i >= 0 && a[i] == 0) {
+	while (i > 0 && a[i] == 0) {
 		i--;
 	}
 
-	if (i > 0) {
-		return (i << RLC_DIG_LOG) + util_bits_dig(a[i]);
-	} else {
-		return util_bits_dig(a[0]);
-	}
+	return (i << RLC_DIG_LOG) + util_bits_dig(a[i]);
 }
 
 void fp_set_dig(fp_t c, dig_t a) {
@@ -104,7 +122,7 @@ void fp_set_dig(fp_t c, dig_t a) {
 }
 
 void fp_rand(fp_t a) {
-	int bits, digits;
+	uint_t bits, digits;
 
 	rand_bytes((uint8_t *)a, RLC_FP_DIGS * sizeof(dig_t));
 
@@ -116,6 +134,13 @@ void fp_rand(fp_t a) {
 
 	while (dv_cmp(a, fp_prime_get(), RLC_FP_DIGS) != RLC_LT) {
 		fp_subm_low(a, a, fp_prime_get());
+	}
+}
+
+void fp_norm(fp_t c, const fp_t a) {
+	fp_copy(c, a);
+	while (dv_cmp(c, fp_prime_get(), RLC_FP_DIGS) != RLC_LT) {
+		fp_subn_low(c, c, fp_prime_get());
 	}
 }
 
@@ -136,6 +161,8 @@ void fp_print(const fp_t a) {
 		}
 #else
 		bn_read_raw(t, a, RLC_FP_DIGS);
+		fp_norm(t->dp, t->dp);
+		bn_trim(t);
 #endif
 
 		for (i = RLC_FP_DIGS - 1; i > 0; i--) {
@@ -157,9 +184,9 @@ void fp_print(const fp_t a) {
 	}
 }
 
-int fp_size_str(const fp_t a, int radix) {
+size_t fp_size_str(const fp_t a, uint_t radix) {
 	bn_t t;
-	int digits = 0;
+	size_t digits = 0;
 
 	bn_null(t);
 
@@ -179,7 +206,7 @@ int fp_size_str(const fp_t a, int radix) {
 	return digits;
 }
 
-void fp_read_str(fp_t a, const char *str, int len, int radix) {
+void fp_read_str(fp_t a, const char *str, size_t len, uint_t radix) {
 	bn_t t;
 
 	bn_null(t);
@@ -208,7 +235,7 @@ void fp_read_str(fp_t a, const char *str, int len, int radix) {
 	}
 }
 
-void fp_write_str(char *str, int len, const fp_t a, int radix) {
+void fp_write_str(char *str, size_t len, const fp_t a, uint_t radix) {
 	bn_t t;
 
 	bn_null(t);
@@ -227,7 +254,7 @@ void fp_write_str(char *str, int len, const fp_t a, int radix) {
 	}
 }
 
-void fp_read_bin(fp_t a, const uint8_t *bin, int len) {
+void fp_read_bin(fp_t a, const uint8_t *bin, size_t len) {
 	bn_t t;
 
 	bn_null(t);
@@ -253,7 +280,7 @@ void fp_read_bin(fp_t a, const uint8_t *bin, int len) {
 				} else {
 					fp_prime_conv(a, t);
 				}
-			}	
+			}
 		}
 	}
 	RLC_CATCH_ANY {
@@ -264,7 +291,7 @@ void fp_read_bin(fp_t a, const uint8_t *bin, int len) {
 	}
 }
 
-void fp_write_bin(uint8_t *bin, int len, const fp_t a) {
+void fp_write_bin(uint8_t *bin, size_t len, const fp_t a) {
 	bn_t t;
 
 	bn_null(t);
@@ -278,7 +305,6 @@ void fp_write_bin(uint8_t *bin, int len, const fp_t a) {
 		bn_new(t);
 
 		fp_prime_back(t, a);
-
 		bn_write_bin(bin, len, t);
 	} RLC_CATCH_ANY {
 		RLC_THROW(ERR_CAUGHT);

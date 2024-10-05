@@ -48,24 +48,26 @@
 /**
  * Precision in bits of a prime field element.
  */
-#define RLC_FP_BITS 	((int)FP_PRIME)
+#define RLC_FP_BITS 	((size_t)FP_PRIME)
 
 /**
  * Size in digits of a block sufficient to store a prime field element.
  */
-#define RLC_FP_DIGS 	((int)RLC_CEIL(RLC_FP_BITS, RLC_DIG))
+#define RLC_FP_DIGS 	((size_t)RLC_CEIL(RLC_FP_BITS, RLC_DIG))
 
 /**
  * Size in bytes of a block sufficient to store a binary field element.
  */
-#define RLC_FP_BYTES 	((int)RLC_CEIL(RLC_FP_BITS, 8))
+#define RLC_FP_BYTES 	((size_t)RLC_CEIL(RLC_FP_BITS, 8))
 
 /*
  * Finite field identifiers.
  */
 enum {
+    /** Mersenne prime with 127 bits. */
+    MP_127 = 1,
 	/** SECG 160-bit fast reduction prime. */
-	SECG_160 = 1,
+	SECG_160,
 	/** SECG 160-bit denser reduction prime. */
 	SECG_160D,
 	/** NIST 192-bit fast reduction prime. */
@@ -92,6 +94,8 @@ enum {
 	BSI_256,
 	/** SECG 256-bit denser reduction prime. */
 	SECG_256,
+	/** SM2 256-bit prime modulus standardized in China. */
+	SM2_256,
 	/** Curve67254 382-bit prime modulus. */
 	PRIME_382105,
 	/** Curve383187 383-bit prime modulus. */
@@ -100,6 +104,8 @@ enum {
 	NIST_384,
 	/** Curve448 prime. */
 	PRIME_448,
+	/** 511-bit prime for CTIDH. */
+	CTIDH_511,
 	/** Curve511187 511-bit prime modulus. */
 	PRIME_511187,
 	/** NIST 521-bit fast reduction polynomial. */
@@ -116,6 +122,8 @@ enum {
 	B24_315,
 	/** 317-bit prime for BLS curve of embedding degree 24 (SNARKs). */
 	B24_317,
+	/** 330-bit prime for KSS curve with embedding degree 16. */
+	K16_330,
 	/** 381-bit prime for BLS curve of embedding degree 12 (SNARKs). */
 	B12_377,
 	/** 381-bit prime for BLS curve of embedding degree 12 (Zcash). */
@@ -133,23 +141,41 @@ enum {
 	/** 477-bit prime for BLS curve of embedding degree 24. */
 	B24_509,
 	/** 508-bit prime for KSS16 curve. */
-	KSS_508,
-	/** 511-bit prime for Optimal TNFS-secure curve. */
-	OT_511,
+	K18_508,
 	/** Random 544-bit prime for Cocks-Pinch curve with embedding degree 8. */
 	GMT8_544,
-	/** 569-bit prime for KSS curve with embedding degree 54. */
-	K54_569,
+	/** 569-bit prime for SG curve with embedding degree 54. */
+	SG54_569,
 	/** 575-bit prime for BLS curve with embedding degree 48. */
 	B48_575,
 	/** 638-bit prime provided in Barreto et al. for BN curve. */
 	BN_638,
 	/** 638-bit prime for BLS curve with embedding degree 12. */
 	B12_638,
+	/** 638-bit prime for KSS curve with embedding degree 18. */
+	K18_638,
+    /** 638-bit prime for SG curve with embedding degree 18. */
+    SG18_638,
+	/** 765-bit prime for FM curve with embedding degree 16. */
+	FM16_765,
+	/** 766-bit prime for KSS curve with embedding degree 16. */
+	K16_766,
+	/** 766-bit prime for new family with embedding degree 16. */
+	N16_766,
+	/** 768-bit prime for FM curve with embedding degree 18. */
+	FM18_768,
+	/** 1024-bit prime for CTIDH. */
+	CTIDH_1024,
+	/** 1150-bit prime for BLS curve with embedding degree 12. */
+	B12_1150,
 	/** 1536-bit prime for supersingular curve with embedding degree k = 2. */
 	SS_1536,
+	/** 2048-bit prime for CTDIH. */
+	CTIDH_2048,
 	/** 3072-bit prime for supersingular curve with embedding degree k = 1. */
-	SS_3072,
+	K1_3072,
+	/** 4096-bit prime for SQALE. */
+	SQALE_4096,
 };
 
 /**
@@ -442,11 +468,34 @@ const dig_t *fp_prime_get_rdc(void);
 const dig_t *fp_prime_get_conv(void);
 
 /**
+ * Returns a 2^f-root of unity modulo the prime field modulus, for the maximum f
+ * such that 2^f divides (p-1).
+ *
+ * @return the root of unity.
+ */
+const dig_t *fp_prime_get_srt(void);
+
+/**
+ * Returns a 3^f-root of unity modulo the prime field modulus, for the maximum f
+ * such that 3^f divides (p-1).
+ *
+ * @return the root of unity.
+ */
+const dig_t *fp_prime_get_crt(void);
+
+/**
  * Returns the result of prime order mod 8.
  *
  * @return the result of prime order mod 8.
  */
 dig_t fp_prime_get_mod8(void);
+
+/**
+ * Returns the result of prime order mod 18.
+ *
+ * @return the result of prime order mod 18.
+ */
+dig_t fp_prime_get_mod18(void);
 
 /**
  * Returns the prime stored in special form. The most significant bit is
@@ -499,10 +548,10 @@ void fp_prime_set_dense(const bn_t p);
  * @param[in] spars		- the list of powers of 2 describing the prime.
  * @param[in] len		- the number of powers.
  */
-void fp_prime_set_pmers(const int *spars, int len);
+void fp_prime_set_pmers(const int *spars, size_t len);
 
 /**
-* Assigns the prime field modulus to a parametrization from a family of
+ * Assigns the prime field modulus to a parametrization from a family of
  * pairing-friendly curves.
  */
 void fp_prime_set_pairf(const bn_t x, int pairf);
@@ -622,6 +671,15 @@ void fp_param_get_sps(int *s, int *len);
 void fp_copy(fp_t c, const fp_t a);
 
 /**
+ * Conditionally copies a field element to another field element.
+ *
+ * @param[out] c			- the destination.
+ * @paraim[in] a			- the source.
+ * @param[in] bit			- the condition bit to evaluate.
+ */
+void fp_copy_sec(fp_t c, const fp_t a, dig_t bit);
+
+/**
  * Assigns zero to a prime field element.
  *
  * @param[out] a			- the prime field element to asign.
@@ -651,7 +709,7 @@ int fp_is_even(const fp_t a);
  * @param[in] bit			- the bit position.
  * @return the bit value.
  */
-int fp_get_bit(const fp_t a, int bit);
+int fp_get_bit(const fp_t a, uint_t bit);
 
 /**
  * Stores a bit in a given position on a prime field element.
@@ -660,7 +718,7 @@ int fp_get_bit(const fp_t a, int bit);
  * @param[in] bit			- the bit position.
  * @param[in] value			- the bit value.
  */
-void fp_set_bit(fp_t a, int bit, int value);
+void fp_set_bit(fp_t a, uint_t bit, int value);
 
 /**
  * Assigns a small positive constant to a prime field element.
@@ -679,7 +737,7 @@ void fp_set_dig(fp_t c, dig_t a);
  * @param[in] a				- the prime field element.
  * @return the number of bits.
  */
-int fp_bits(const fp_t a);
+size_t fp_bits(const fp_t a);
 
 /**
  * Assigns a random value to a prime field element.
@@ -687,6 +745,14 @@ int fp_bits(const fp_t a);
  * @param[out] a			- the prime field element to assign.
  */
 void fp_rand(fp_t a);
+
+/**
+ * Normalizes a prime field element to a representative in [0, p - 1].
+ *
+ * @param[out] c 			- the normalized field element.
+ * @param[in] a 			- the field element to normalize-
+ */
+void fp_norm(fp_t c, const fp_t a);
 
 /**
  * Prints a prime field element to standard output.
@@ -704,7 +770,7 @@ void fp_print(const fp_t a);
  * @throw ERR_NO_VALID		- if the radix is invalid.
  * @return the number of digits in the given radix.
  */
-int fp_size_str(const fp_t a, int radix);
+size_t fp_size_str(const fp_t a, uint_t radix);
 
 /**
  * Reads a prime field element from a string in a given radix. The radix must
@@ -716,7 +782,7 @@ int fp_size_str(const fp_t a, int radix);
  * @param[in] radix			- the radix.
  * @throw ERR_NO_VALID		- if the radix is invalid.
  */
-void fp_read_str(fp_t a, const char *str, int len, int radix);
+void fp_read_str(fp_t a, const char *str, size_t len, uint_t radix);
 
 /**
  * Writes a prime field element to a string in a given radix. The radix must
@@ -729,7 +795,7 @@ void fp_read_str(fp_t a, const char *str, int len, int radix);
  * @throw ERR_BUFFER		- if the buffer capacity is insufficient.
  * @throw ERR_NO_VALID		- if the radix is invalid.
  */
-void fp_write_str(char *str, int len, const fp_t a, int radix);
+void fp_write_str(char *str, size_t len, const fp_t a, uint_t radix);
 
 /**
  * Reads a prime field element from a byte vector in big-endian format.
@@ -739,7 +805,7 @@ void fp_write_str(char *str, int len, const fp_t a, int radix);
  * @param[in] len			- the buffer capacity.
  * @throw ERR_NO_BUFFER		- if the buffer capacity is not RLC_FP_BYTES.
  */
-void fp_read_bin(fp_t a, const uint8_t *bin, int len);
+void fp_read_bin(fp_t a, const uint8_t *bin, size_t len);
 
 /**
  * Writes a prime field element to a byte vector in big-endian format.
@@ -749,7 +815,7 @@ void fp_read_bin(fp_t a, const uint8_t *bin, int len);
  * @param[in] a				- the prime field element to write.
  * @throw ERR_NO_BUFFER		- if the buffer capacity is not RLC_FP_BYTES.
  */
-void fp_write_bin(uint8_t *bin, int len, const fp_t a);
+void fp_write_bin(uint8_t *bin, size_t len, const fp_t a);
 
 /**
  * Returns the result of a comparison between two prime field elements.
@@ -962,7 +1028,7 @@ void fp_sqr_karat(fp_t c, const fp_t a);
  * @param[in] a				- the prime field element to shift.
  * @param[in] bits			- the number of bits to shift.
  */
-void fp_lsh(fp_t c, const fp_t a, int bits);
+void fp_lsh(fp_t c, const fp_t a, uint_t bits);
 
 /**
  * Shifts a prime field element to the right. Computes c = floor(a / 2^bits).
@@ -971,7 +1037,7 @@ void fp_lsh(fp_t c, const fp_t a, int bits);
  * @param[in] a				- the prime field element to shift.
  * @param[in] bits			- the number of bits to shift.
  */
-void fp_rsh(fp_t c, const fp_t a, int bits);
+void fp_rsh(fp_t c, const fp_t a, uint_t bits);
 
 /**
  * Reduces a multiplication result modulo the prime field modulo using
@@ -1156,6 +1222,23 @@ void fp_exp_slide(fp_t c, const fp_t a, const bn_t b);
 void fp_exp_monty(fp_t c, const fp_t a, const bn_t b);
 
 /**
+ * Computes a power of a field element by a small exponent.
+ *
+ * @param[out] c			- the result.
+ * @param[in] a				- the basis.
+ * @param[in] b				- the exponent.
+ */
+void fp_exp_dig(fp_t c, const fp_t a, dig_t b);
+
+/**
+ * Tests if a prime field element is a quadratic residue.
+ *
+ * @param[in] a				- the prime field element to test.
+ * @return 1 if the argument is even, 0 otherwise.
+ */
+int fp_is_sqr(const fp_t a);
+
+/**
  * Extracts the square root of a prime field element. Computes c = sqrt(a). The
  * other square root is the negation of c.
  *
@@ -1164,5 +1247,23 @@ void fp_exp_monty(fp_t c, const fp_t a, const bn_t b);
  * @return					- 1 if there is a square root, 0 otherwise.
  */
 int fp_srt(fp_t c, const fp_t a);
+
+/**
+ * Tests if a prime field element is a cubic residue.
+ *
+ * @param[in] a				- the prime field element to test.
+ * @return 1 if the argument is even, 0 otherwise.
+ */
+int fp_is_cub(const fp_t a);
+
+/**
+ * Extracts the cube root of a prime field element. Computes c = crt(a). The
+ * other cube root is the square of c.
+ *
+ * @param[out] c			- the result.
+ * @param[in] a				- the prime field element.
+ * @return					- 1 if there is a cube root, 0 otherwise.
+ */
+int fp_crt(fp_t c, const fp_t a);
 
 #endif /* !RLC_FP_H */
